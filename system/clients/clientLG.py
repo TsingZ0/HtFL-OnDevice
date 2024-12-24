@@ -29,7 +29,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=0.001)
     parser.add_argument("--momentum", type=float, default=0.9)
-    parser.add_argument("--model", type=str, default="")
+    parser.add_argument("--model", type=str, default="ResNet18")
     parser.add_argument("--num_classes", type=int, default=10)
     parser.add_argument("--pretrained", type=bool, default=False)
     parser.add_argument("--server_address", type=str, default="127.0.0.1:8080")
