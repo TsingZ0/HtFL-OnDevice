@@ -5,7 +5,7 @@ import flwr as fl
 if __name__ == "__main__":
     # Configration of the server
     parser = argparse.ArgumentParser()
-    parser.add_argument("--num_rounds", type=int, default=100)
+    parser.add_argument("--num_rounds", type=int, default=3)
     args = parser.parse_args()
 
     # Start server

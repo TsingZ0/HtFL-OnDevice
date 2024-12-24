@@ -79,7 +79,11 @@ class Client(fl.client.NumPyClient):
     def train(self):
         """Train the network on the training set."""
         criterion = torch.nn.CrossEntropyLoss()
-        optimizer = torch.optim.SGD(self.net.parameters(), lr=self.args.learning_rate)
+        optimizer = torch.optim.SGD(
+            self.net.parameters(), 
+            lr=self.args.learning_rate, 
+            momentum=self.args.momentum
+        )
         for _ in range(self.args.epochs):
             for images, labels in self.trainloader:
                 images, labels = images.to(DEVICE), labels.to(DEVICE)
@@ -90,16 +94,17 @@ class Client(fl.client.NumPyClient):
 
     def test(self):
         """Validate the network on the entire test set."""
-        criterion = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.CrossEntropyLoss(reduce=False)
         correct, total, loss = 0, 0, 0.0
         with torch.no_grad():
             for data in self.testloader:
                 images, labels = data[0].to(DEVICE), data[1].to(DEVICE)
                 outputs = self.net(images)
-                loss += criterion(outputs, labels).item()
+                loss += (criterion(outputs, labels)).sum().item()
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
+        loss = loss / total
         accuracy = correct / total
         return loss, accuracy
 
@@ -111,6 +116,7 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=0.001)
+    parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--server_address", type=str, default="127.0.0.1:8080")
     args = parser.parse_args()
 
