@@ -30,6 +30,6 @@ The HtFL frameworks with ~~strikethrough~~ indicate the ones that are not yet im
 ## How to Use
 
 1. Distribute and store realistic datasets (`.npz` files) on all devices using a designated strategy (to be determined).
-2. Deploy the server and client files to the workstation and devices, respectively.
+2. Deploy the server and client files (with utils) to the workstation and devices, respectively.
 3. Execute the server file with the appropriate configurations (varies by HtFL framework).
 4. Execute the client file with the appropriate configurations (varies by HtFL framework).
