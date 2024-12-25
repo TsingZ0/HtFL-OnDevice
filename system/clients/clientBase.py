@@ -1,3 +1,4 @@
+import warnings
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -5,6 +6,8 @@ import flwr as fl
 from torch.utils.data import DataLoader
 from flwr.common.logger import log
 from logging import WARNING, INFO
+
+warnings.simplefilter("ignore")
 
 
 class ClientBase(fl.client.NumPyClient):
@@ -73,9 +76,9 @@ class ClientBase(fl.client.NumPyClient):
         for _ in range(self.args.epochs):
             for images, labels in self.trainloader:
                 images, labels = images.to(self.device), labels.to(self.device)
-                optimizer.zero_grad()
                 outputs = self.model(images)
                 loss = criterion(outputs, labels)
+                optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 

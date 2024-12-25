@@ -46,4 +46,20 @@ def get_model(args):
     return BaseHeadSplit(args, model)
 
 
+def get_auxiliary_model(args):
+    if args.auxiliary_model == "ResNet18":
+        model = torchvision.models.resnet18(
+            num_classes=args.num_classes, 
+            pretrained=args.pretrained, 
+        )
+    elif args.auxiliary_model == "ResNet34":
+        model = torchvision.models.resnet34(
+            num_classes=args.num_classes, 
+            pretrained=args.pretrained, 
+        )
+    else:
+        raise NotImplementedError    
+    return BaseHeadSplit(args, model)
+
+
 # Define customized local model
