@@ -42,6 +42,7 @@ if __name__ == "__main__":
             evaluate_fn=None,
             on_fit_config_fn=None,
             on_evaluate_config_fn=None,
+            inplace=True,
         ),
     )
 

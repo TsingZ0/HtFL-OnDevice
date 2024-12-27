@@ -12,7 +12,7 @@ warnings.simplefilter("ignore")
 
 class ClientBase(fl.client.NumPyClient):
     def __init__(self, args, model):
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.args = args
         self.model = model.to(self.device)
         self.load_data()
