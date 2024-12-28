@@ -37,7 +37,9 @@ class Client(ClientBase):
 
     # receive
     def set_parameters(self, parameters):
-        if parameters[0].shape[0] == self.args.feature_dim:
+        model = load_item("model", self.args.save_folder_path)
+        params_len = len(model.head.state_dict().keys())
+        if len(parameters) != params_len:
             log(WARNING, "Received parameters are only for initialization.")
         else:
             model = load_item("model", self.args.save_folder_path)
@@ -64,7 +66,7 @@ class Client(ClientBase):
 if __name__ == "__main__":
     # Configuration of the client
     parser = argparse.ArgumentParser()
-    parser.add_argument("--save_folder_path", type=str, default='checkpoints')
+    parser.add_argument("--save_folder_path", type=str, default="checkpoints")
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=0.01)

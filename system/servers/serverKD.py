@@ -67,7 +67,7 @@ def decomposition(param_iter, energy):
 if __name__ == "__main__":
     # Configration of the server
     parser = argparse.ArgumentParser()
-    parser.add_argument("--save_folder_path", type=str, default='checkpoints')
+    parser.add_argument("--save_folder_path", type=str, default="checkpoints")
     parser.add_argument("--num_rounds", type=int, default=3)
     parser.add_argument("--fraction_fit", type=float, default=1.0)
     parser.add_argument("--min_fit_clients", type=int, default=2)

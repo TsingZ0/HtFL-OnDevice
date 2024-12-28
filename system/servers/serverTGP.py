@@ -109,7 +109,7 @@ class FedTGP(fl.server.strategy.FedAvg):
             for label, proto in enumerate(protos):
                 uploaded_protos.append((proto, label))
 
-        # calculate class-wise minimum distance
+        # Calculate class-wise minimum distance
         gap = torch.ones(self.args.num_classes, device=self.device) * 1e9
         avg_protos = proto_cluster(uploaded_protos_per_client)
         for k1 in avg_protos.keys():
@@ -127,6 +127,7 @@ class FedTGP(fl.server.strategy.FedAvg):
         log(INFO, f'min_gap {self.min_gap}')
         log(INFO, f'max_gap {self.max_gap}')
 
+        # Update global prototypes
         global_protos = self.update_TGP(uploaded_protos)
 
         global_protos_ndarrays = [proto.cpu().numpy() for proto in global_protos]
@@ -184,7 +185,7 @@ class FedTGP(fl.server.strategy.FedAvg):
 if __name__ == "__main__":
     # Configration of the server
     parser = argparse.ArgumentParser()
-    parser.add_argument("--save_folder_path", type=str, default='checkpoints')
+    parser.add_argument("--save_folder_path", type=str, default="checkpoints")
     parser.add_argument("--num_rounds", type=int, default=3)
     parser.add_argument("--fraction_fit", type=float, default=1.0)
     parser.add_argument("--min_fit_clients", type=int, default=2)

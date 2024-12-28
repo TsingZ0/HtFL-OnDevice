@@ -2,14 +2,17 @@ import argparse
 import os
 import time
 import flwr as fl
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from flwr.common.logger import log
 from logging import WARNING, INFO
 from flwr.common import parameters_to_ndarrays, ndarrays_to_parameters
+from flwr.server.strategy.aggregate import aggregate
 from torch.utils.data import DataLoader
 from utils.misc import weighted_metrics_avg, save_item, load_item
+from collections import OrderedDict
 
 
 def get_head(args):
@@ -18,6 +21,36 @@ def get_head(args):
     else:
         raise NotImplementedError
     return head
+
+
+# based on official code https://github.com/zhuangdizhu/FedGen/blob/main/FLAlgorithms/trainmodel/generator.py
+class Generator(nn.Module):
+    def __init__(self, noise_dim, num_classes, hidden_dim, feature_dim, device) -> None:
+        super().__init__()
+
+        self.noise_dim = noise_dim
+        self.num_classes = num_classes
+        self.device = device
+
+        self.fc1 = nn.Sequential(
+            nn.Linear(noise_dim + num_classes, hidden_dim), 
+            nn.BatchNorm1d(hidden_dim), 
+            nn.ReLU()
+        )
+
+        self.fc = nn.Linear(hidden_dim, feature_dim)
+
+    def forward(self, labels):
+        batch_size = labels.shape[0]
+        eps = torch.rand((batch_size, self.noise_dim), device=self.device) # sampling from Gaussian
+
+        y_input = F.one_hot(labels, self.num_classes)
+        z = torch.cat((eps, y_input), dim=1)
+
+        z = self.fc1(z)
+        z = self.fc(z)
+
+        return z
 
 
 class FedGH(fl.server.strategy.FedAvg):
@@ -48,8 +81,14 @@ class FedGH(fl.server.strategy.FedAvg):
         )
         self.args = args
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        Head = get_head(args).to(self.device)
-        save_item(Head, 'Head', self.args.save_folder_path)
+        generative_model = Generator(
+            noise_dim=args.noise_dim, 
+            num_classes=args.num_classes, 
+            hidden_dim=args.hidden_dim, 
+            feature_dim=args.feature_dim, 
+            device=self.device
+        ).to(self.device)
+        save_item(generative_model, 'generative_model', self.args.save_folder_path)
 
     def aggregate_fit(
         self,
@@ -65,21 +104,26 @@ class FedGH(fl.server.strategy.FedAvg):
             return None, {}
 
         # Convert results
-        uploaded_protos_per_client = [
-            [torch.tensor(proto) for proto in parameters_to_ndarrays(fit_res.parameters)]
+        weights_results = [
+            (parameters_to_ndarrays(fit_res.parameters), fit_res.num_examples)
             for _, fit_res in results
         ]
-        uploaded_protos = []
-        for protos in uploaded_protos_per_client:
-            for label, proto in enumerate(protos):
-                uploaded_protos.append((proto, label))
+        aggregated_ndarrays = aggregate(weights_results)
 
-        # Update Head
-        self.update_Head(uploaded_protos)
-        Head = load_item('Head', self.args.save_folder_path)
-        Head_ndarrays = [val.cpu().numpy() for _, val in Head.state_dict().items()]
+        # Update generator
+        uploaded_heads = []
+        for weights, num_examples in weights_results:
+            head = get_head(self.args).to(self.device)
+            state_dict = OrderedDict({key: torch.tensor(value) 
+                for key, value in zip(head.state_dict().keys(), weights)})
+            head.load_state_dict(state_dict, strict=True)
+            uploaded_heads.append((head, num_examples))
+        self.update_generative_model(uploaded_heads)
+        generative_model = load_item('generative_model', self.args.save_folder_path)
+        generative_model_param_ndarrays = [val.cpu().numpy() for _, val in generative_model.state_dict().items()]
 
-        parameters_aggregated = ndarrays_to_parameters(Head_ndarrays)
+        parameters_aggregated = ndarrays_to_parameters(
+            aggregated_ndarrays + generative_model_param_ndarrays)
 
         # Aggregate custom metrics if aggregation fn was provided
         metrics_aggregated = {}
@@ -91,27 +135,29 @@ class FedGH(fl.server.strategy.FedAvg):
 
         return parameters_aggregated, metrics_aggregated
     
-    def update_Head(self, uploaded_protos):
-        Head = load_item('Head', self.args.save_folder_path)
-        Head.train()
-        Head_opt = torch.optim.SGD(Head.parameters(), lr=self.args.learning_rate)
+    def update_generative_model(self, uploaded_heads):
+        generative_model = load_item('generative_model', self.args.save_folder_path)
+        generative_model.train()
+        generative_model_opt = torch.optim.Adam(
+            params=generative_model.parameters(),
+            lr=self.args.learning_rate, betas=(0.9, 0.999),
+            eps=1e-08, weight_decay=0, amsgrad=False)
         criterion = nn.CrossEntropyLoss()
-        proto_loader = DataLoader(
-            uploaded_protos, 
-            self.args.batch_size, 
-            drop_last=False, 
-            shuffle=True
-        )
+        candidate_labels = np.arange(self.args.num_classes)
         for _ in range(self.args.epochs):
-            for proto, y in proto_loader:
-                proto = proto.to(self.device)
-                y = torch.Tensor(y).type(torch.int64).to(self.device)
-                out = Head(proto)
-                loss = criterion(out, y)
-                Head_opt.zero_grad()
-                loss.backward()
-                Head_opt.step()
-        save_item(Head, 'Head', self.args.save_folder_path)
+            labels = np.random.choice(candidate_labels, self.args.batch_size)
+            labels = torch.LongTensor(labels).to(self.device)
+            z = generative_model(labels)
+            logits = 0
+            for head, num_examples in uploaded_heads:
+                head.eval()
+                logits += head(z) * num_examples
+
+            generative_model_opt.zero_grad()
+            loss = criterion(logits, labels)
+            loss.backward()
+            generative_model_opt.step()
+        save_item(generative_model, 'generative_model', self.args.save_folder_path)
 
 
 if __name__ == "__main__":
@@ -125,6 +171,8 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--learning_rate", type=float, default=0.01)
     parser.add_argument("--feature_dim", type=int, default=512)
+    parser.add_argument("--noise_dim", type=int, default=32)
+    parser.add_argument("--hidden_dim", type=int, default=512)
     parser.add_argument("--num_classes", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--client_model", type=str, default="ResNet")
