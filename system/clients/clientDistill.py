@@ -29,7 +29,7 @@ class Client(ClientBase):
     # send
     def get_parameters(self, config):
         self.collect_protos()
-        protos = load_item("protos", self.save_folder_path)
+        protos = load_item(self.args.client_id, "protos", self.save_folder_path)
         uploads = [0 for _ in range(self.args.num_classes)]
         for key, value in protos.items():
             uploads[key] = value.cpu().numpy()
@@ -41,11 +41,11 @@ class Client(ClientBase):
         protos = OrderedDict(
             {key: torch.tensor(value).to(self.device) for key, value in proto_dict}
         )
-        save_item(protos, "protos", self.save_folder_path)
+        save_item(protos, self.args.client_id, "protos", self.save_folder_path)
 
     def train(self):
         """Train the network on the training set."""
-        model = load_item("model", self.save_folder_path)
+        model = load_item(self.args.client_id, "model", self.save_folder_path)
         model.train()
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
@@ -53,7 +53,7 @@ class Client(ClientBase):
             lr=self.args.learning_rate, 
             momentum=self.args.momentum
         )
-        protos = load_item("protos", self.save_folder_path)
+        protos = load_item(self.args.client_id, "protos", self.save_folder_path)
         for _ in range(self.args.epochs):
             for images, labels in self.trainloader:
                 images, labels = images.to(self.device), labels.to(self.device)
@@ -70,10 +70,10 @@ class Client(ClientBase):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-        save_item(model, "model", self.save_folder_path)
+        save_item(model, self.args.client_id, "model", self.save_folder_path)
 
     def collect_protos(self):
-        model = load_item("model", self.save_folder_path)
+        model = load_item(self.args.client_id, "model", self.save_folder_path)
         model.eval()
         protos = defaultdict(list)
         for _ in range(self.args.epochs):
@@ -84,13 +84,13 @@ class Client(ClientBase):
                     label = label.item()
                     protos[label].append(outputs[i, :].detach().data)
         protos = agg_func(protos)
-        save_item(protos, "protos", self.save_folder_path)
+        save_item(protos, self.args.client_id, "protos", self.save_folder_path)
 
 
 if __name__ == "__main__":
     # Configuration of the client
     parser = argparse.ArgumentParser()
-    parser.add_argument("--client_id", type=int, default=0)
+    parser.add_argument("--client_id", type=str, default='0')
     parser.add_argument("--save_folder_path", type=str, default='checkpoints')
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)

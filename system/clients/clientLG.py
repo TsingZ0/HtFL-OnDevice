@@ -12,22 +12,22 @@ class Client(ClientBase):
 
     # send
     def get_parameters(self, config):
-        model = load_item("model", self.save_folder_path)
+        model = load_item(self.args.client_id, "model", self.save_folder_path)
         return [val.cpu().numpy() for _, val in model.head.state_dict().items()]
 
     # receive
     def set_parameters(self, parameters):
-        model = load_item("model", self.save_folder_path)
+        model = load_item(self.args.client_id, "model", self.save_folder_path)
         params_dict = zip(model.head.state_dict().keys(), parameters)
         state_dict = OrderedDict({key: torch.tensor(value) for key, value in params_dict})
         model.head.load_state_dict(state_dict, strict=True)
-        save_item(model, "model", self.save_folder_path)
+        save_item(model, self.args.client_id, "model", self.save_folder_path)
 
 
 if __name__ == "__main__":
     # Configuration of the client
     parser = argparse.ArgumentParser()
-    parser.add_argument("--client_id", type=int, default=0)
+    parser.add_argument("--client_id", type=str, default='0')
     parser.add_argument("--save_folder_path", type=str, default='checkpoints')
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)

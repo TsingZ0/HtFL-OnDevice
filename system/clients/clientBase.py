@@ -20,7 +20,7 @@ class ClientBase(fl.client.NumPyClient):
         self.timestamp = str(time.time())
         log(INFO, f"Timestamp: {self.timestamp}")
         self.save_folder_path = os.path.join(args.save_folder_path, self.timestamp)
-        save_item(model.to(self.device), "model", self.save_folder_path)
+        save_item(model.to(self.device), self.args.client_id, "model", self.save_folder_path)
         self.load_data()
 
     # send
@@ -72,7 +72,7 @@ class ClientBase(fl.client.NumPyClient):
 
     def train(self):
         """Train the model on the training set."""
-        model = load_item("model", self.save_folder_path)
+        model = load_item(self.args.client_id, "model", self.save_folder_path)
         model.train()
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
@@ -88,11 +88,11 @@ class ClientBase(fl.client.NumPyClient):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-        save_item(model, "model", self.save_folder_path)
+        save_item(model, self.args.client_id, "model", self.save_folder_path)
 
     def test(self):
         """Validate the model on the entire test set."""
-        model = load_item("model", self.save_folder_path)
+        model = load_item(self.args.client_id, "model", self.save_folder_path)
         model.eval()
         criterion = torch.nn.CrossEntropyLoss(reduce=False)
         correct, total, loss = 0, 0, 0.0

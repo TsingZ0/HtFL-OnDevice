@@ -12,7 +12,10 @@ class Client(ClientBase):
     def __init__(self, args, model, auxiliary_model):
         super().__init__(args, model)
         save_item(auxiliary_model.to(self.device), self.args.client_id, "auxiliary_model", self.save_folder_path)
+        W_h = nn.Linear(args.global_feature_dim, args.feature_dim, bias=False)
+        save_item(W_h.to(self.device), self.args.client_id, "W_h", self.save_folder_path)
         self.KL = nn.KLDivLoss()
+        self.MSE = nn.MSELoss()
 
     # send
     def get_parameters(self, config):
@@ -32,8 +35,6 @@ class Client(ClientBase):
         model = load_item(self.args.client_id, "model", self.save_folder_path)
         model.train()
         auxiliary_model = load_item(self.args.client_id, "auxiliary_model", self.save_folder_path)
-        print(auxiliary_model)
-        input("Press Enter to continue...")
         auxiliary_model.train()
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
@@ -62,7 +63,7 @@ class Client(ClientBase):
                 torch.nn.utils.clip_grad_norm_(auxiliary_model.parameters(), 10)
                 optimizer.step()
                 optimizer_aux.step()
-        save_item(model, self.args.client_id, "model", self.save_folder_path)
+        save_item(model, "model", self.args.client_id, self.save_folder_path)
         save_item(auxiliary_model, self.args.client_id, "auxiliary_model", self.save_folder_path)
 
 
@@ -76,6 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("--learning_rate", type=float, default=0.001)
     parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--model", type=str, default="ResNet18")
+    parser.add_argument("--global_feature_dim", type=int, default=512)
     parser.add_argument("--feature_dim", type=int, default=512)
     parser.add_argument("--num_classes", type=int, default=10)
     parser.add_argument("--pretrained", type=bool, default=False)
