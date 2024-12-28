@@ -8,16 +8,16 @@ from flwr.common.logger import log
 from logging import WARNING, INFO
 
 
-def save_item(item, role, item_name, item_path=None):
+def save_item(item, item_name, item_path=None):
     if not os.path.exists(item_path):
         os.makedirs(item_path)
-    torch.save(item, os.path.join(item_path, role + "_" + item_name + ".pt"))
+    torch.save(item, os.path.join(item_path, f"{item_name}.pt"))
 
-def load_item(role, item_name, item_path=None):
+def load_item(item_name, item_path=None):
     try:
-        return torch.load(os.path.join(item_path, role + "_" + item_name + ".pt"))
+        return torch.load(os.path.join(item_path, f"{item_name}.pt"))
     except FileNotFoundError:
-        log(INFO, f'{role} {item_name} Not Found')
+        log(INFO, f"Not Found: {item_name}")
         return None
     
 

@@ -11,29 +11,27 @@ from utils.models import get_model, get_auxiliary_model, save_item, load_item
 class Client(ClientBase):
     def __init__(self, args, model, auxiliary_model):
         super().__init__(args, model)
-        save_item(auxiliary_model.to(self.device), self.args.client_id, "auxiliary_model", self.save_folder_path)
+        save_item(auxiliary_model.to(self.device), "auxiliary_model", self.save_folder_path)
         self.KL = nn.KLDivLoss()
 
     # send
     def get_parameters(self, config):
-        auxiliary_model = load_item(self.args.client_id, "auxiliary_model", self.save_folder_path)
+        auxiliary_model = load_item("auxiliary_model", self.save_folder_path)
         return [val.cpu().numpy() for _, val in auxiliary_model.state_dict().items()]
 
     # receive
     def set_parameters(self, parameters):
-        auxiliary_model = load_item(self.args.client_id, "auxiliary_model", self.save_folder_path)
+        auxiliary_model = load_item("auxiliary_model", self.save_folder_path)
         params_dict = zip(auxiliary_model.state_dict().keys(), parameters)
         state_dict = OrderedDict({key: torch.tensor(value) for key, value in params_dict})
         auxiliary_model.load_state_dict(state_dict, strict=True)
-        save_item(auxiliary_model, self.args.client_id, "auxiliary_model", self.save_folder_path)
+        save_item(auxiliary_model, "auxiliary_model", self.save_folder_path)
 
     def train(self):
         """Train the model on the training set."""
-        model = load_item(self.args.client_id, "model", self.save_folder_path)
+        model = load_item("model", self.save_folder_path)
         model.train()
-        auxiliary_model = load_item(self.args.client_id, "auxiliary_model", self.save_folder_path)
-        print(auxiliary_model)
-        input("Press Enter to continue...")
+        auxiliary_model = load_item("auxiliary_model", self.save_folder_path)
         auxiliary_model.train()
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
@@ -43,7 +41,7 @@ class Client(ClientBase):
         )
         optimizer_aux = torch.optim.SGD(
             auxiliary_model.parameters(), 
-            lr=self.args.learning_rate, 
+            lr=self.args.auxiliary_learning_rate, 
             momentum=self.args.momentum
         )
         for _ in range(self.args.epochs):
@@ -62,18 +60,18 @@ class Client(ClientBase):
                 torch.nn.utils.clip_grad_norm_(auxiliary_model.parameters(), 10)
                 optimizer.step()
                 optimizer_aux.step()
-        save_item(model, self.args.client_id, "model", self.save_folder_path)
-        save_item(auxiliary_model, self.args.client_id, "auxiliary_model", self.save_folder_path)
+        save_item(model, "model", self.save_folder_path)
+        save_item(auxiliary_model, "auxiliary_model", self.save_folder_path)
 
 
 if __name__ == "__main__":
     # Configuration of the client
     parser = argparse.ArgumentParser()
-    parser.add_argument("--client_id", type=str, default='0')
     parser.add_argument("--save_folder_path", type=str, default='checkpoints')
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--learning_rate", type=float, default=0.001)
+    parser.add_argument("--learning_rate", type=float, default=0.01)
+    parser.add_argument("--auxiliary_learning_rate", type=float, default=0.01)
     parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--model", type=str, default="ResNet18")
     parser.add_argument("--feature_dim", type=int, default=512)
