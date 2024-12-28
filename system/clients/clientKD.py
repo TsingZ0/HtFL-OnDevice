@@ -74,6 +74,7 @@ class Client(ClientBase):
     def get_parameters(self, config):
         auxiliary_model = load_item("auxiliary_model", self.save_folder_path)
         compressed_parameters = decomposition(auxiliary_model.state_dict().items(), self.energy)
+        # TODO ERROR: ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 3 dimensions. The detected shape was (3, 64, 3) + inhomogeneous part.
         return [np.array(val) for _, val in compressed_parameters.items()]
 
     # receive
