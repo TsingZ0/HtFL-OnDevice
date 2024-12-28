@@ -3,7 +3,7 @@ import torch
 import flwr as fl
 from collections import OrderedDict
 from clientBase import ClientBase
-from utils.models import get_model
+from utils.models import get_model, save_item, load_item
 
 
 class Client(ClientBase):
@@ -12,19 +12,23 @@ class Client(ClientBase):
 
     # send
     def get_parameters(self, config):
-        return [val.cpu().numpy() for _, val in self.model.head.state_dict().items()]
+        model = load_item("model", self.save_folder_path)
+        return [val.cpu().numpy() for _, val in model.head.state_dict().items()]
 
     # receive
     def set_parameters(self, parameters):
-        params_dict = zip(self.model.head.state_dict().keys(), parameters)
+        model = load_item("model", self.save_folder_path)
+        params_dict = zip(model.head.state_dict().keys(), parameters)
         state_dict = OrderedDict({key: torch.tensor(value) for key, value in params_dict})
-        self.model.head.load_state_dict(state_dict, strict=True)
+        model.head.load_state_dict(state_dict, strict=True)
+        save_item(model, "model", self.save_folder_path)
 
 
 if __name__ == "__main__":
     # Configuration of the client
     parser = argparse.ArgumentParser()
     parser.add_argument("--client_id", type=int, default=0)
+    parser.add_argument("--save_folder_path", type=str, default='checkpoints')
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=0.001)

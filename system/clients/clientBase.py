@@ -1,3 +1,5 @@
+import os
+import time
 import warnings
 import torch
 import torchvision
@@ -5,6 +7,7 @@ import torchvision.transforms as transforms
 import flwr as fl
 from torch.utils.data import DataLoader
 from flwr.common.logger import log
+from utils.models import save_item, load_item
 from logging import WARNING, INFO
 
 warnings.simplefilter("ignore")
@@ -14,7 +17,10 @@ class ClientBase(fl.client.NumPyClient):
     def __init__(self, args, model):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.args = args
-        self.model = model.to(self.device)
+        self.timestamp = str(time.time())
+        log(INFO, f"Timestamp: {self.timestamp}")
+        self.save_folder_path = os.path.join(args.save_folder_path, self.timestamp)
+        save_item(model.to(self.device), "model", self.save_folder_path)
         self.load_data()
 
     # send
@@ -66,31 +72,34 @@ class ClientBase(fl.client.NumPyClient):
 
     def train(self):
         """Train the model on the training set."""
-        self.model.train()
+        model = load_item("model", self.save_folder_path)
+        model.train()
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
-            self.model.parameters(), 
+            model.parameters(), 
             lr=self.args.learning_rate, 
             momentum=self.args.momentum
         )
         for _ in range(self.args.epochs):
             for images, labels in self.trainloader:
                 images, labels = images.to(self.device), labels.to(self.device)
-                outputs = self.model(images)
+                outputs = model(images)
                 loss = criterion(outputs, labels)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+        save_item(model, "model", self.save_folder_path)
 
     def test(self):
         """Validate the model on the entire test set."""
-        self.model.eval()
+        model = load_item("model", self.save_folder_path)
+        model.eval()
         criterion = torch.nn.CrossEntropyLoss(reduce=False)
         correct, total, loss = 0, 0, 0.0
         with torch.no_grad():
             for data in self.testloader:
                 images, labels = data[0].to(self.device), data[1].to(self.device)
-                outputs = self.model(images)
+                outputs = model(images)
                 loss += (criterion(outputs, labels)).sum().item()
                 total += labels.size(0)
                 _, predicted = torch.max(outputs.data, 1)
@@ -98,4 +107,5 @@ class ClientBase(fl.client.NumPyClient):
         loss = loss / total
         accuracy = correct / total
         return loss, accuracy
+    
 

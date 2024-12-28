@@ -1,9 +1,25 @@
 
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
+from flwr.common.logger import log
+from logging import WARNING, INFO
 
+
+def save_item(item, item_name, item_path=None):
+    if not os.path.exists(item_path):
+        os.makedirs(item_path)
+    torch.save(item, os.path.join(item_path, item_name + ".pt"))
+
+def load_item(item_name, item_path=None):
+    try:
+        return torch.load(os.path.join(item_path, item_name + ".pt"))
+    except FileNotFoundError:
+        log(INFO, f'{item_name} Not Found')
+        return None
+    
 
 # split an original model into a base and a head
 class BaseHeadSplit(nn.Module):
@@ -63,3 +79,4 @@ def get_auxiliary_model(args):
 
 
 # Define customized local model
+
