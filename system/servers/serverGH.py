@@ -8,49 +8,11 @@ import torch.nn.functional as F
 from flwr.common.logger import log
 from logging import WARNING, INFO
 from flwr.common import parameters_to_ndarrays, ndarrays_to_parameters
-from collections import defaultdict
 from torch.utils.data import DataLoader
 from utils.misc import weighted_metrics_avg, save_item, load_item
-
-
-def proto_cluster(protos_list):
-    proto_clusters = defaultdict(list)
-    for protos in protos_list:
-        for k, proto in enumerate(protos):
-            proto_clusters[k].append(proto)
-
-    for k in proto_clusters.keys():
-        protos = torch.stack(proto_clusters[k])
-        proto_clusters[k] = torch.mean(protos, dim=0).detach()
-
-    return proto_clusters
-
-
-class Trainable_Global_Prototypes(nn.Module):
-    def __init__(self, num_classes, hidden_dim, feature_dim, device):
-        super().__init__()
-
-        self.device = device
-
-        self.embedings = nn.Embedding(num_classes, feature_dim)
-        layers = [nn.Sequential(
-            nn.Linear(feature_dim, hidden_dim), 
-            nn.ReLU()
-        )]
-        self.middle = nn.Sequential(*layers)
-        self.fc = nn.Linear(hidden_dim, feature_dim)
-
-    def forward(self, class_id):
-        class_id = torch.tensor(class_id, device=self.device)
-
-        emb = self.embedings(class_id)
-        mid = self.middle(emb)
-        out = self.fc(mid)
-
-        return out
     
 
-class FedTGP(fl.server.strategy.FedAvg):
+class FedGH(fl.server.strategy.FedAvg):
     def __init__(self,
             fraction_fit,
             fraction_evaluate,
@@ -78,13 +40,8 @@ class FedTGP(fl.server.strategy.FedAvg):
         )
         self.args = args
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        TGP = Trainable_Global_Prototypes(
-            self.args.num_classes, 
-            self.args.hidden_dim, 
-            self.args.feature_dim, 
-            self.device
-        ).to(self.device)
-        save_item(TGP, 'TGP', self.args.save_folder_path)
+        Head = nn.Linear(args.feature_dim, args.num_classes).to(self.device)
+        save_item(Head, 'Head', self.args.save_folder_path)
 
     def aggregate_fit(
         self,
@@ -109,28 +66,11 @@ class FedTGP(fl.server.strategy.FedAvg):
             for label, proto in enumerate(protos):
                 uploaded_protos.append((proto, label))
 
-        # calculate class-wise minimum distance
-        gap = torch.ones(self.args.num_classes, device=self.device) * 1e9
-        avg_protos = proto_cluster(uploaded_protos_per_client)
-        for k1 in avg_protos.keys():
-            for k2 in avg_protos.keys():
-                if k1 > k2:
-                    dis = torch.norm(avg_protos[k1] - avg_protos[k2], p=2)
-                    gap[k1] = torch.min(gap[k1], dis)
-                    gap[k2] = torch.min(gap[k2], dis)
-        self.min_gap = torch.min(gap)
-        for i in range(len(gap)):
-            if gap[i] > torch.tensor(1e8, device=self.device):
-                gap[i] = self.min_gap
-        self.max_gap = torch.max(gap)
-        log(INFO, f'class-wise minimum distance {gap}')
-        log(INFO, f'min_gap {self.min_gap}')
-        log(INFO, f'max_gap {self.max_gap}')
+        self.update_Head(uploaded_protos)
+        Head = load_item('Head', self.args.save_folder_path)
+        Head_ndarrays = [val.cpu().numpy() for _, val in Head.state_dict().items()]
 
-        global_protos = self.update_TGP(uploaded_protos)
-
-        global_protos_ndarrays = [proto.cpu().numpy() for proto in global_protos]
-        parameters_aggregated = ndarrays_to_parameters(global_protos_ndarrays)
+        parameters_aggregated = ndarrays_to_parameters(Head_ndarrays)
 
         # Aggregate custom metrics if aggregation fn was provided
         metrics_aggregated = {}
@@ -142,43 +82,27 @@ class FedTGP(fl.server.strategy.FedAvg):
 
         return parameters_aggregated, metrics_aggregated
     
-    def update_TGP(self, uploaded_protos):
-        TGP = load_item('TGP', self.args.save_folder_path)
-        TGP.train()
-        TGP_opt = torch.optim.SGD(TGP.parameters(), lr=self.args.learning_rate)
+    def update_Head(self, uploaded_protos):
+        Head = load_item('Head', self.args.save_folder_path)
+        Head.train()
+        Head_opt = torch.optim.SGD(Head.parameters(), lr=self.args.learning_rate)
         criterion = nn.CrossEntropyLoss()
+        proto_loader = DataLoader(
+            uploaded_protos, 
+            self.args.batch_size, 
+            drop_last=False, 
+            shuffle=True
+        )
         for _ in range(self.args.epochs):
-            proto_loader = DataLoader(
-                uploaded_protos, 
-                self.args.batch_size, 
-                drop_last=False, 
-                shuffle=True
-            )
             for proto, y in proto_loader:
                 proto = proto.to(self.device)
                 y = torch.Tensor(y).type(torch.int64).to(self.device)
-
-                proto_gen = TGP(list(range(self.args.num_classes)))
-
-                features_square = torch.sum(torch.pow(proto, 2), 1, keepdim=True)
-                centers_square = torch.sum(torch.pow(proto_gen, 2), 1, keepdim=True)
-                features_into_centers = torch.matmul(proto, proto_gen.T)
-                dist = features_square - 2 * features_into_centers + centers_square.T
-                dist = torch.sqrt(dist)
-                
-                one_hot = F.one_hot(y, self.args.num_classes).to(self.device)
-                margin = min(self.max_gap.item(), self.args.margin_threthold)
-                dist = dist + one_hot * margin
-                loss = criterion(-dist, y)
-
-                TGP_opt.zero_grad()
+                out = Head(proto)
+                loss = criterion(out, y)
+                Head_opt.zero_grad()
                 loss.backward()
-                TGP_opt.step()
-
-        TGP.eval()
-        global_protos = [TGP(i).detach() for i in range(self.args.num_classes)]
-        save_item(TGP, 'TGP', self.args.save_folder_path)
-        return global_protos
+                Head_opt.step()
+        save_item(Head, 'Head', self.args.save_folder_path)
 
 
 if __name__ == "__main__":
@@ -189,11 +113,9 @@ if __name__ == "__main__":
     parser.add_argument("--fraction_fit", type=float, default=1.0)
     parser.add_argument("--min_fit_clients", type=int, default=2)
     parser.add_argument("--min_available_clients", type=int, default=2)
-    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--learning_rate", type=float, default=0.01)
-    parser.add_argument("--hidden_dim", type=int, default=512)
     parser.add_argument("--feature_dim", type=int, default=512)
-    parser.add_argument("--margin_threthold", type=float, default=100.0)
     parser.add_argument("--num_classes", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=128)
     args = parser.parse_args()
@@ -204,7 +126,7 @@ if __name__ == "__main__":
     # Start server
     fl.server.start_server(
         config=fl.server.ServerConfig(num_rounds=args.num_rounds),
-        strategy=FedTGP(
+        strategy=FedGH(
             fraction_fit=args.fraction_fit,
             fraction_evaluate=1.0,
             min_fit_clients=args.min_fit_clients,

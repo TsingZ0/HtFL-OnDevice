@@ -18,7 +18,7 @@ The HtFL frameworks with ~~strikethrough~~ indicate the ones that are not yet im
   - Partial-heterogeneity-based HtFL
     - **LG-FedAvg** — [Think Locally, Act Globally: Federated Learning with Local and Global Representations](https://arxiv.org/abs/2001.01523) *2020*
     - ~~**FedGen** — [Data-Free Knowledge Distillation for Heterogeneous Federated Learning](http://proceedings.mlr.press/v139/zhu21b.html) *ICML 2021*~~
-    - ~~**FedGH** — [FedGH: Heterogeneous Federated Learning with Generalized Global Header](https://dl.acm.org/doi/10.1145/3581783.3611781) *ACM MM 2023*~~
+    - **FedGH** — [FedGH: Heterogeneous Federated Learning with Generalized Global Header](https://dl.acm.org/doi/10.1145/3581783.3611781) *ACM MM 2023*
   - Full-heterogeneity-based HtFL
     - **FedDistill (FD)** — [Communication-Efficient On-Device Machine Learning: Federated Distillation and Augmentation under Non-IID Private Data](https://arxiv.org/pdf/1811.11479.pdf) *2018*
     - **FML** — [Federated Mutual Learning](https://arxiv.org/abs/2006.16765) *2020*

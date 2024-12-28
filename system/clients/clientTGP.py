@@ -1,11 +1,15 @@
 import argparse
 import copy
+import os
+import time
 import torch
 import torch.nn as nn
 import flwr as fl
 from collections import OrderedDict, defaultdict
 from clientBase import ClientBase
 from utils.models import get_model, save_item, load_item
+from flwr.common.logger import log
+from logging import WARNING, INFO
 
 
 def agg_func(protos):
@@ -29,7 +33,7 @@ class Client(ClientBase):
     # send
     def get_parameters(self, config):
         self.collect_protos()
-        protos = load_item("protos", self.save_folder_path)
+        protos = load_item("protos", self.args.save_folder_path)
         uploads = [0 for _ in range(self.args.num_classes)]
         for key, value in protos.items():
             uploads[key] = value.cpu().numpy()
@@ -41,11 +45,11 @@ class Client(ClientBase):
         protos = OrderedDict(
             {key: torch.tensor(value).to(self.device) for key, value in proto_dict}
         )
-        save_item(protos, "protos", self.save_folder_path)
+        save_item(protos, "protos", self.args.save_folder_path)
 
     def train(self):
         """Train the network on the training set."""
-        model = load_item("model", self.save_folder_path)
+        model = load_item("model", self.args.save_folder_path)
         model.train()
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
@@ -53,7 +57,7 @@ class Client(ClientBase):
             lr=self.args.learning_rate, 
             momentum=self.args.momentum
         )
-        protos = load_item("protos", self.save_folder_path)
+        protos = load_item("protos", self.args.save_folder_path)
         for _ in range(self.args.epochs):
             for images, labels in self.trainloader:
                 images, labels = images.to(self.device), labels.to(self.device)
@@ -71,15 +75,15 @@ class Client(ClientBase):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-        save_item(model, "model", self.save_folder_path)
+        save_item(model, "model", self.args.save_folder_path)
 
     def test(self):
         """Validate the model on the entire test set."""
-        model = load_item("model", self.save_folder_path)
+        model = load_item("model", self.args.save_folder_path)
         model.eval()
         criterion = torch.nn.CrossEntropyLoss(reduce=False)
         correct, total, loss = 0, 0, 0.0
-        protos = load_item("protos", self.save_folder_path)
+        protos = load_item("protos", self.args.save_folder_path)
         with torch.no_grad():
             for data in self.testloader:
                 images, labels = data[0].to(self.device), data[1].to(self.device)
@@ -103,7 +107,7 @@ class Client(ClientBase):
         return loss, accuracy
 
     def collect_protos(self):
-        model = load_item("model", self.save_folder_path)
+        model = load_item("model", self.args.save_folder_path)
         model.eval()
         protos = defaultdict(list)
         for _ in range(self.args.epochs):
@@ -114,7 +118,7 @@ class Client(ClientBase):
                     label = label.item()
                     protos[label].append(reps[i, :].detach().data)
         protos = agg_func(protos)
-        save_item(protos, "protos", self.save_folder_path)
+        save_item(protos, "protos", self.args.save_folder_path)
 
 
 if __name__ == "__main__":
@@ -132,6 +136,9 @@ if __name__ == "__main__":
     parser.add_argument("--server_address", type=str, default="127.0.0.1:8080")
     parser.add_argument("--lamda", type=float, default=1.0)
     args = parser.parse_args()
+    timestamp = str(time.time())
+    log(INFO, f"Timestamp: {timestamp}")
+    args.save_folder_path = os.path.join(args.save_folder_path, timestamp)
 
     # Load model
     model = get_model(args)

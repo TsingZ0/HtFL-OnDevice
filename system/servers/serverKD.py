@@ -1,26 +1,13 @@
 import argparse
 import os
+import time
 import flwr as fl
+import numpy as np
 from flwr.common.logger import log
 from logging import WARNING, INFO
+from utils.misc import weighted_metrics_avg
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-
-
-def weighted_metrics_avg(eval_metrics):
-    """Aggregate evaluation results obtained from multiple clients."""
-    num_total_evaluation_examples = sum(num_examples for (num_examples, _) in eval_metrics)
-    metrics_aggregated = {}
-    for num_examples, metrics in eval_metrics:
-        for key, value in metrics.items():
-            if key not in metrics_aggregated:
-                metrics_aggregated[key] = num_examples * value
-            else:
-                metrics_aggregated[key] += num_examples * value
-    for key in metrics_aggregated:
-        metrics_aggregated[key] /= num_total_evaluation_examples
-        log(INFO, f"{key}: {metrics_aggregated[key]}")
-    return metrics_aggregated
 
 
 def recover(compressed_param):
@@ -80,11 +67,15 @@ def decomposition(param_iter, energy):
 if __name__ == "__main__":
     # Configration of the server
     parser = argparse.ArgumentParser()
+    parser.add_argument("--save_folder_path", type=str, default='checkpoints')
     parser.add_argument("--num_rounds", type=int, default=3)
     parser.add_argument("--fraction_fit", type=float, default=1.0)
     parser.add_argument("--min_fit_clients", type=int, default=2)
     parser.add_argument("--min_available_clients", type=int, default=2)
     args = parser.parse_args()
+    timestamp = str(time.time())
+    log(INFO, f"Timestamp: {timestamp}")
+    args.save_folder_path = os.path.join(args.save_folder_path, timestamp)
 
     # Start server
     fl.server.start_server(

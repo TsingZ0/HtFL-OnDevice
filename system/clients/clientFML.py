@@ -1,4 +1,6 @@
 import argparse
+import os
+import time
 import torch
 import torch.nn as nn
 import flwr as fl
@@ -6,32 +8,34 @@ import torch.nn.functional as F
 from collections import OrderedDict
 from clientBase import ClientBase
 from utils.models import get_model, get_auxiliary_model, save_item, load_item
+from flwr.common.logger import log
+from logging import WARNING, INFO
 
 
 class Client(ClientBase):
     def __init__(self, args, model, auxiliary_model):
         super().__init__(args, model)
-        save_item(auxiliary_model.to(self.device), "auxiliary_model", self.save_folder_path)
+        save_item(auxiliary_model.to(self.device), "auxiliary_model", self.args.save_folder_path)
         self.KL = nn.KLDivLoss()
 
     # send
     def get_parameters(self, config):
-        auxiliary_model = load_item("auxiliary_model", self.save_folder_path)
+        auxiliary_model = load_item("auxiliary_model", self.args.save_folder_path)
         return [val.cpu().numpy() for _, val in auxiliary_model.state_dict().items()]
 
     # receive
     def set_parameters(self, parameters):
-        auxiliary_model = load_item("auxiliary_model", self.save_folder_path)
+        auxiliary_model = load_item("auxiliary_model", self.args.save_folder_path)
         params_dict = zip(auxiliary_model.state_dict().keys(), parameters)
         state_dict = OrderedDict({key: torch.tensor(value) for key, value in params_dict})
         auxiliary_model.load_state_dict(state_dict, strict=True)
-        save_item(auxiliary_model, "auxiliary_model", self.save_folder_path)
+        save_item(auxiliary_model, "auxiliary_model", self.args.save_folder_path)
 
     def train(self):
         """Train the model on the training set."""
-        model = load_item("model", self.save_folder_path)
+        model = load_item("model", self.args.save_folder_path)
         model.train()
-        auxiliary_model = load_item("auxiliary_model", self.save_folder_path)
+        auxiliary_model = load_item("auxiliary_model", self.args.save_folder_path)
         auxiliary_model.train()
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
@@ -60,8 +64,8 @@ class Client(ClientBase):
                 torch.nn.utils.clip_grad_norm_(auxiliary_model.parameters(), 10)
                 optimizer.step()
                 optimizer_aux.step()
-        save_item(model, "model", self.save_folder_path)
-        save_item(auxiliary_model, "auxiliary_model", self.save_folder_path)
+        save_item(model, "model", self.args.save_folder_path)
+        save_item(auxiliary_model, "auxiliary_model", self.args.save_folder_path)
 
 
 if __name__ == "__main__":
@@ -82,6 +86,9 @@ if __name__ == "__main__":
     parser.add_argument("--alpha", type=float, default=0.5)
     parser.add_argument("--beta", type=float, default=0.5)
     args = parser.parse_args()
+    timestamp = str(time.time())
+    log(INFO, f"Timestamp: {timestamp}")
+    args.save_folder_path = os.path.join(args.save_folder_path, timestamp)
 
     # Load model
     model = get_model(args)

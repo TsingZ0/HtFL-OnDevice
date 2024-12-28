@@ -1,9 +1,13 @@
 import argparse
+import os
+import time
 import torch
 import flwr as fl
 from collections import OrderedDict
 from clientBase import ClientBase
 from utils.models import get_model, save_item, load_item
+from flwr.common.logger import log
+from logging import WARNING, INFO
 
 
 class Client(ClientBase):
@@ -12,16 +16,16 @@ class Client(ClientBase):
 
     # send
     def get_parameters(self, config):
-        model = load_item("model", self.save_folder_path)
+        model = load_item("model", self.args.save_folder_path)
         return [val.cpu().numpy() for _, val in model.head.state_dict().items()]
 
     # receive
     def set_parameters(self, parameters):
-        model = load_item("model", self.save_folder_path)
+        model = load_item("model", self.args.save_folder_path)
         params_dict = zip(model.head.state_dict().keys(), parameters)
         state_dict = OrderedDict({key: torch.tensor(value) for key, value in params_dict})
         model.head.load_state_dict(state_dict, strict=True)
-        save_item(model, "model", self.save_folder_path)
+        save_item(model, "model", self.args.save_folder_path)
 
 
 if __name__ == "__main__":
@@ -38,6 +42,9 @@ if __name__ == "__main__":
     parser.add_argument("--pretrained", type=bool, default=False)
     parser.add_argument("--server_address", type=str, default="127.0.0.1:8080")
     args = parser.parse_args()
+    timestamp = str(time.time())
+    log(INFO, f"Timestamp: {timestamp}")
+    args.save_folder_path = os.path.join(args.save_folder_path, timestamp)
 
     # Load model
     model = get_model(args)

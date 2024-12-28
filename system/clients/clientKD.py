@@ -1,5 +1,6 @@
 import os
 import argparse
+import time
 import numpy as np
 import torch
 import torch.nn as nn
@@ -8,6 +9,8 @@ import torch.nn.functional as F
 from collections import OrderedDict
 from clientBase import ClientBase
 from utils.models import get_model, get_auxiliary_model, save_item, load_item
+from flwr.common.logger import log
+from logging import WARNING, INFO
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
@@ -65,34 +68,34 @@ def decomposition(param_iter, energy):
 class Client(ClientBase):
     def __init__(self, args, model, auxiliary_model):
         super().__init__(args, model)
-        save_item(auxiliary_model.to(self.device), "auxiliary_model", self.save_folder_path)
+        save_item(auxiliary_model.to(self.device), "auxiliary_model", self.args.save_folder_path)
         W_h = nn.Linear(args.global_feature_dim, args.feature_dim, bias=False)
-        save_item(W_h.to(self.device), "W_h", self.save_folder_path)
+        save_item(W_h.to(self.device), "W_h", self.args.save_folder_path)
         self.energy = args.T_start
 
     # send
     def get_parameters(self, config):
-        auxiliary_model = load_item("auxiliary_model", self.save_folder_path)
+        auxiliary_model = load_item("auxiliary_model", self.args.save_folder_path)
         compressed_parameters = decomposition(auxiliary_model.state_dict().items(), self.energy)
         # TODO ERROR: ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 3 dimensions. The detected shape was (3, 64, 3) + inhomogeneous part.
         return [np.array(val) for _, val in compressed_parameters.items()]
 
     # receive
     def set_parameters(self, compressed_parameters):
-        auxiliary_model = load_item("auxiliary_model", self.save_folder_path)
+        auxiliary_model = load_item("auxiliary_model", self.args.save_folder_path)
         compressed_params_dict = zip(auxiliary_model.state_dict().keys(), compressed_parameters)
         params_dict = recover(compressed_params_dict)
         state_dict = OrderedDict({key: torch.tensor(value) for key, value in params_dict})
         auxiliary_model.load_state_dict(state_dict, strict=True)
-        save_item(auxiliary_model, "auxiliary_model", self.save_folder_path)
+        save_item(auxiliary_model, "auxiliary_model", self.args.save_folder_path)
 
     def train(self):
         """Train the model on the training set."""
-        model = load_item("model", self.save_folder_path)
+        model = load_item("model", self.args.save_folder_path)
         model.train()
-        W_h = load_item("W_h", self.save_folder_path)
+        W_h = load_item("W_h", self.args.save_folder_path)
         W_h.train()
-        auxiliary_model = load_item("auxiliary_model", self.save_folder_path)
+        auxiliary_model = load_item("auxiliary_model", self.args.save_folder_path)
         auxiliary_model.train()
         criterion = torch.nn.CrossEntropyLoss()
         KL = nn.KLDivLoss()
@@ -144,8 +147,8 @@ class Client(ClientBase):
                 optimizer.step()
                 optimizer_aux.step()
                 optimizer_W.step()
-        save_item(model, "model", self.save_folder_path)
-        save_item(auxiliary_model, "auxiliary_model", self.save_folder_path)
+        save_item(model, "model", self.args.save_folder_path)
+        save_item(auxiliary_model, "auxiliary_model", self.args.save_folder_path)
 
 
 if __name__ == "__main__":
@@ -167,6 +170,9 @@ if __name__ == "__main__":
     parser.add_argument("--T_start", type=float, default=0.95)
     parser.add_argument("--T_end", type=float, default=0.98)
     args = parser.parse_args()
+    timestamp = str(time.time())
+    log(INFO, f"Timestamp: {timestamp}")
+    args.save_folder_path = os.path.join(args.save_folder_path, timestamp)
 
     # Load model
     model = get_model(args)
