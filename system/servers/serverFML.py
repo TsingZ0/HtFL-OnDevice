@@ -4,7 +4,7 @@ import time
 import flwr as fl
 from flwr.common.logger import log
 from logging import WARNING, INFO
-from utils.misc import weighted_metrics_avg
+from .utils.misc import weighted_metrics_avg
 
 
 if __name__ == "__main__":

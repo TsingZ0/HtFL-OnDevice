@@ -11,7 +11,7 @@ from logging import WARNING, INFO
 from flwr.common import parameters_to_ndarrays, ndarrays_to_parameters
 from flwr.server.strategy.aggregate import aggregate
 from torch.utils.data import DataLoader
-from utils.misc import weighted_metrics_avg, save_item, load_item
+from .utils.misc import weighted_metrics_avg, save_item, load_item
 from collections import OrderedDict
 
 
@@ -33,8 +33,8 @@ class Generator(nn.Module):
         self.device = device
 
         self.fc1 = nn.Sequential(
-            nn.Linear(noise_dim + num_classes, hidden_dim), 
-            nn.BatchNorm1d(hidden_dim), 
+            nn.Linear(noise_dim + num_classes, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
             nn.ReLU()
         )
 
@@ -65,7 +65,7 @@ class FedGH(fl.server.strategy.FedAvg):
             on_fit_config_fn,
             on_evaluate_config_fn,
             inplace,
-            args, 
+            args,
         ):
         super().__init__(
             fraction_fit=fraction_fit,
@@ -82,10 +82,10 @@ class FedGH(fl.server.strategy.FedAvg):
         self.args = args
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         generative_model = Generator(
-            noise_dim=args.noise_dim, 
-            num_classes=args.num_classes, 
-            hidden_dim=args.hidden_dim, 
-            feature_dim=args.feature_dim, 
+            noise_dim=args.noise_dim,
+            num_classes=args.num_classes,
+            hidden_dim=args.hidden_dim,
+            feature_dim=args.feature_dim,
             device=self.device
         ).to(self.device)
         save_item(generative_model, 'generative_model', self.args.save_folder_path)
@@ -114,7 +114,7 @@ class FedGH(fl.server.strategy.FedAvg):
         uploaded_heads = []
         for weights, num_examples in weights_results:
             head = get_head(self.args).to(self.device)
-            state_dict = OrderedDict({key: torch.tensor(value) 
+            state_dict = OrderedDict({key: torch.tensor(value)
                 for key, value in zip(head.state_dict().keys(), weights)})
             head.load_state_dict(state_dict, strict=True)
             uploaded_heads.append((head, num_examples))
@@ -134,7 +134,7 @@ class FedGH(fl.server.strategy.FedAvg):
             log(WARNING, "No fit_metrics_aggregation_fn provided")
 
         return parameters_aggregated, metrics_aggregated
-    
+
     def update_generative_model(self, uploaded_heads):
         generative_model = load_item('generative_model', self.args.save_folder_path)
         generative_model.train()
@@ -195,7 +195,7 @@ if __name__ == "__main__":
             on_fit_config_fn=None,
             on_evaluate_config_fn=None,
             inplace=False,
-            args=args, 
+            args=args,
         ),
     )
 

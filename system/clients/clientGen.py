@@ -6,9 +6,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import flwr as fl
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from clientBase import ClientBase
-from utils.models import get_model, save_item, load_item
+from .utils.models import get_model, save_item, load_item
 from flwr.common.logger import log
 from logging import WARNING, INFO
 
@@ -23,8 +23,8 @@ class Generator(nn.Module):
         self.device = device
 
         self.fc1 = nn.Sequential(
-            nn.Linear(noise_dim + num_classes, hidden_dim), 
-            nn.BatchNorm1d(hidden_dim), 
+            nn.Linear(noise_dim + num_classes, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
             nn.ReLU()
         )
 
@@ -41,16 +41,16 @@ class Generator(nn.Module):
         z = self.fc(z)
 
         return z
-    
+
 
 class Client(ClientBase):
     def __init__(self, args, model):
         super().__init__(args, model)
         generative_model = Generator(
-            noise_dim=args.noise_dim, 
-            num_classes=args.num_classes, 
-            hidden_dim=args.hidden_dim, 
-            feature_dim=args.feature_dim, 
+            noise_dim=args.noise_dim,
+            num_classes=args.num_classes,
+            hidden_dim=args.hidden_dim,
+            feature_dim=args.feature_dim,
             device=self.device
         ).to(self.device)
         save_item(generative_model, 'generative_model', self.args.save_folder_path)
@@ -85,8 +85,8 @@ class Client(ClientBase):
         model.train()
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
-            model.parameters(), 
-            lr=self.args.learning_rate, 
+            model.parameters(),
+            lr=self.args.learning_rate,
             momentum=self.args.momentum
         )
         generative_model = load_item("generative_model", self.args.save_folder_path)
@@ -135,6 +135,6 @@ if __name__ == "__main__":
 
     # Start client
     fl.client.start_client(
-        server_address=args.server_address, 
+        server_address=args.server_address,
         client=Client(args, model).to_client()
     )

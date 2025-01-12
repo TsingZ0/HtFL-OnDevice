@@ -10,7 +10,7 @@ from logging import WARNING, INFO
 from flwr.common import parameters_to_ndarrays, ndarrays_to_parameters
 from collections import defaultdict
 from torch.utils.data import DataLoader
-from utils.misc import weighted_metrics_avg, save_item, load_item
+from .utils.misc import weighted_metrics_avg, save_item, load_item
 
 
 def proto_cluster(protos_list):
@@ -34,7 +34,7 @@ class Trainable_Global_Prototypes(nn.Module):
 
         self.embedings = nn.Embedding(num_classes, feature_dim)
         layers = [nn.Sequential(
-            nn.Linear(feature_dim, hidden_dim), 
+            nn.Linear(feature_dim, hidden_dim),
             nn.ReLU()
         )]
         self.middle = nn.Sequential(*layers)
@@ -48,7 +48,7 @@ class Trainable_Global_Prototypes(nn.Module):
         out = self.fc(mid)
 
         return out
-    
+
 
 class FedTGP(fl.server.strategy.FedAvg):
     def __init__(self,
@@ -62,7 +62,7 @@ class FedTGP(fl.server.strategy.FedAvg):
             on_fit_config_fn,
             on_evaluate_config_fn,
             inplace,
-            args, 
+            args,
         ):
         super().__init__(
             fraction_fit=fraction_fit,
@@ -79,9 +79,9 @@ class FedTGP(fl.server.strategy.FedAvg):
         self.args = args
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         TGP = Trainable_Global_Prototypes(
-            self.args.num_classes, 
-            self.args.hidden_dim, 
-            self.args.feature_dim, 
+            self.args.num_classes,
+            self.args.hidden_dim,
+            self.args.feature_dim,
             self.device
         ).to(self.device)
         save_item(TGP, 'TGP', self.args.save_folder_path)
@@ -142,7 +142,7 @@ class FedTGP(fl.server.strategy.FedAvg):
             log(WARNING, "No fit_metrics_aggregation_fn provided")
 
         return parameters_aggregated, metrics_aggregated
-    
+
     def update_TGP(self, uploaded_protos):
         TGP = load_item('TGP', self.args.save_folder_path)
         TGP.train()
@@ -150,9 +150,9 @@ class FedTGP(fl.server.strategy.FedAvg):
         criterion = nn.CrossEntropyLoss()
         for _ in range(self.args.epochs):
             proto_loader = DataLoader(
-                uploaded_protos, 
-                self.args.batch_size, 
-                drop_last=False, 
+                uploaded_protos,
+                self.args.batch_size,
+                drop_last=False,
                 shuffle=True
             )
             for proto, y in proto_loader:
@@ -166,7 +166,7 @@ class FedTGP(fl.server.strategy.FedAvg):
                 features_into_centers = torch.matmul(proto, proto_gen.T)
                 dist = features_square - 2 * features_into_centers + centers_square.T
                 dist = torch.sqrt(dist)
-                
+
                 one_hot = F.one_hot(y, self.args.num_classes).to(self.device)
                 margin = min(self.max_gap.item(), self.args.margin_threthold)
                 dist = dist + one_hot * margin
@@ -216,7 +216,7 @@ if __name__ == "__main__":
             on_fit_config_fn=None,
             on_evaluate_config_fn=None,
             inplace=False,
-            args=args, 
+            args=args,
         ),
     )
 

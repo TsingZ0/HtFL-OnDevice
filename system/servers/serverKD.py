@@ -5,7 +5,7 @@ import flwr as fl
 import numpy as np
 from flwr.common.logger import log
 from logging import WARNING, INFO
-from utils.misc import weighted_metrics_avg
+from .utils.misc import weighted_metrics_avg
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
@@ -15,11 +15,11 @@ def recover(compressed_param):
         if len(compressed_param[k]) == 3:
             # use np.matmul to support high-dimensional CNN param
             compressed_param[k] = np.matmul(
-                compressed_param[k][0] * compressed_param[k][1][..., None, :], 
+                compressed_param[k][0] * compressed_param[k][1][..., None, :],
                     compressed_param[k][2])
     return compressed_param
 
-    
+
 def decomposition(param_iter, energy):
     compressed_param = {}
     for name, param in param_iter:
@@ -56,7 +56,7 @@ def decomposition(param_iter, energy):
             compressed_param_cpu=param_cpu
 
         compressed_param[name] = compressed_param_cpu
-        
+
     return compressed_param
 
 
@@ -91,7 +91,7 @@ if __name__ == "__main__":
             on_fit_config_fn=None,
             on_evaluate_config_fn=None,
             inplace=True,
-            args=args, 
+            args=args,
         ),
     )
 

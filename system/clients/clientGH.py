@@ -5,7 +5,7 @@ import torch
 import flwr as fl
 from collections import OrderedDict, defaultdict
 from clientBase import ClientBase
-from utils.models import get_model, save_item, load_item
+from .utils.models import get_model, save_item, load_item
 from flwr.common.logger import log
 from logging import WARNING, INFO
 
@@ -86,6 +86,6 @@ if __name__ == "__main__":
 
     # Start client
     fl.client.start_client(
-        server_address=args.server_address, 
+        server_address=args.server_address,
         client=Client(args, model).to_client()
     )
