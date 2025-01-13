@@ -9,7 +9,7 @@ from flwr.common.logger import log
 from logging import WARNING, INFO
 from flwr.common import parameters_to_ndarrays, ndarrays_to_parameters
 from torch.utils.data import DataLoader
-from utils.misc import weighted_metrics_avg, save_item, load_item
+from .utils.misc import weighted_metrics_avg, save_item, load_item
 
 
 def get_head(args):
@@ -32,7 +32,7 @@ class FedGH(fl.server.strategy.FedAvg):
             on_fit_config_fn,
             on_evaluate_config_fn,
             inplace,
-            args, 
+            args,
         ):
         super().__init__(
             fraction_fit=fraction_fit,
@@ -90,16 +90,16 @@ class FedGH(fl.server.strategy.FedAvg):
             log(WARNING, "No fit_metrics_aggregation_fn provided")
 
         return parameters_aggregated, metrics_aggregated
-    
+
     def update_Head(self, uploaded_protos):
         Head = load_item('Head', self.args.save_folder_path)
         Head.train()
         Head_opt = torch.optim.SGD(Head.parameters(), lr=self.args.learning_rate)
         criterion = nn.CrossEntropyLoss()
         proto_loader = DataLoader(
-            uploaded_protos, 
-            self.args.batch_size, 
-            drop_last=False, 
+            uploaded_protos,
+            self.args.batch_size,
+            drop_last=False,
             shuffle=True
         )
         for _ in range(self.args.epochs):
@@ -147,7 +147,7 @@ if __name__ == "__main__":
             on_fit_config_fn=None,
             on_evaluate_config_fn=None,
             inplace=False,
-            args=args, 
+            args=args,
         ),
     )
 

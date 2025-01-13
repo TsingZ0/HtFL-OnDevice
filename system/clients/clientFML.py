@@ -7,7 +7,7 @@ import flwr as fl
 import torch.nn.functional as F
 from collections import OrderedDict
 from clientBase import ClientBase
-from utils.models import get_model, get_auxiliary_model, save_item, load_item
+from .utils.models import get_model, get_auxiliary_model, save_item, load_item
 from flwr.common.logger import log
 from logging import WARNING, INFO
 
@@ -39,13 +39,13 @@ class Client(ClientBase):
         auxiliary_model.train()
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
-            model.parameters(), 
-            lr=self.args.learning_rate, 
+            model.parameters(),
+            lr=self.args.learning_rate,
             momentum=self.args.momentum
         )
         optimizer_aux = torch.optim.SGD(
-            auxiliary_model.parameters(), 
-            lr=self.args.auxiliary_learning_rate, 
+            auxiliary_model.parameters(),
+            lr=self.args.auxiliary_learning_rate,
             momentum=self.args.momentum
         )
         for _ in range(self.args.epochs):
@@ -96,6 +96,6 @@ if __name__ == "__main__":
 
     # Start client
     fl.client.start_client(
-        server_address=args.server_address, 
+        server_address=args.server_address,
         client=Client(args, model, auxiliary_model).to_client()
     )

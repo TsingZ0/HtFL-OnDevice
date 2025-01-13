@@ -1,5 +1,3 @@
-import os
-import time
 import warnings
 import torch
 import torchvision
@@ -7,8 +5,9 @@ import torchvision.transforms as transforms
 import flwr as fl
 from torch.utils.data import DataLoader
 from flwr.common.logger import log
-from utils.models import save_item, load_item
 from logging import WARNING, INFO
+from system.utils import data_utils
+from .utils.models import save_item, load_item
 
 warnings.simplefilter("ignore")
 
@@ -53,15 +52,21 @@ class ClientBase(fl.client.NumPyClient):
     # rewite this code to use already assigned local data
     def load_data(self):
         """Load training and test set."""
-        transform = transforms.Compose(
-            [
-                transforms.ToTensor(), 
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-            ]
-        )
-        trainset = torchvision.datasets.CIFAR10(
-            "test_data", train=True, download=True, transform=transform)
-        testset = torchvision.datasets.CIFAR10("test_data", train=False, download=True, transform=transform)
+
+        if data_utils.has_local_device_data():
+            trainset = data_utils.read_client_local_data(train=True)
+            testset  = data_utils.read_client_local_data(train=False)
+        # otherwise default to CIFAR10
+        else:
+            transform = transforms.Compose(
+                [
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                ]
+            )
+            trainset = torchvision.datasets.CIFAR10(
+                "test_data", train=True, download=True, transform=transform)
+            testset = torchvision.datasets.CIFAR10("test_data", train=False, download=True, transform=transform)
 
         self.trainloader = DataLoader(trainset, batch_size=self.args.batch_size, shuffle=True)
         self.testloader = DataLoader(testset, batch_size=self.args.batch_size)
@@ -73,8 +78,8 @@ class ClientBase(fl.client.NumPyClient):
         model.train()
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
-            model.parameters(), 
-            lr=self.args.learning_rate, 
+            model.parameters(),
+            lr=self.args.learning_rate,
             momentum=self.args.momentum
         )
         for _ in range(self.args.epochs):

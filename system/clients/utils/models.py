@@ -2,10 +2,9 @@
 import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torchvision
 from flwr.common.logger import log
-from logging import WARNING, INFO
+from logging import INFO
 
 
 def save_item(item, item_name, item_path=None):
@@ -19,7 +18,7 @@ def load_item(item_name, item_path=None):
     except FileNotFoundError:
         log(INFO, f"Not Found: {item_name}")
         return None
-    
+
 
 # split an original model into a base and a head
 class BaseHeadSplit(nn.Module):
@@ -39,24 +38,26 @@ class BaseHeadSplit(nn.Module):
             raise('The base model does not have a classification head.')
 
         self.head = nn.Linear(args.feature_dim, args.num_classes)
-        
+
     def forward(self, x):
         out = self.base(x)
         out = self.head(out)
         return out
-    
+
 
 def get_model(args):
     if args.model == "ResNet18":
         model = torchvision.models.resnet18(
-            num_classes=args.num_classes, 
-            pretrained=args.pretrained, 
+            num_classes=args.num_classes,
+            pretrained=args.pretrained,
         )
     elif args.model == "ResNet34":
         model = torchvision.models.resnet34(
-            num_classes=args.num_classes, 
-            pretrained=args.pretrained, 
+            num_classes=args.num_classes,
+            pretrained=args.pretrained,
         )
+    elif args.model == "HARCNN":
+        model = HARCNN()
     else:
         raise NotImplementedError
     return BaseHeadSplit(args, model)
@@ -65,13 +66,13 @@ def get_model(args):
 def get_auxiliary_model(args):
     if args.auxiliary_model == "ResNet18":
         model = torchvision.models.resnet18(
-            num_classes=args.num_classes, 
-            pretrained=args.pretrained, 
+            num_classes=args.num_classes,
+            pretrained=args.pretrained,
         )
     elif args.auxiliary_model == "ResNet34":
         model = torchvision.models.resnet34(
-            num_classes=args.num_classes, 
-            pretrained=args.pretrained, 
+            num_classes=args.num_classes,
+            pretrained=args.pretrained,
         )
     else:
         raise NotImplementedError
@@ -83,11 +84,11 @@ def get_auxiliary_model(args):
 
 # https://github.com/jindongwang/Deep-learning-activity-recognition/blob/master/pytorch/network.py
 class HARCNN(nn.Module):
-    def __init__(self, 
-            in_channels=9, 
-            hidden_dim=64*26, 
-            num_classes=6, 
-            conv_kernel_size=(1, 9), 
+    def __init__(self,
+            in_channels=9,
+            hidden_dim=64*26,
+            num_classes=6,
+            conv_kernel_size=(1, 9),
             pool_kernel_size=(1, 2)
         ):
         super().__init__()
@@ -103,9 +104,9 @@ class HARCNN(nn.Module):
         )
         self.fc = nn.Sequential(
             nn.Linear(hidden_dim, 1024),
-            nn.ReLU(), 
+            nn.ReLU(),
             nn.Linear(1024, 512),
-            nn.ReLU(), 
+            nn.ReLU(),
             nn.Linear(512, num_classes)
         )
 

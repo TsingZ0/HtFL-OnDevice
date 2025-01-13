@@ -7,7 +7,7 @@ import torch.nn as nn
 import flwr as fl
 from collections import OrderedDict, defaultdict
 from clientBase import ClientBase
-from utils.models import get_model, save_item, load_item
+from .utils.models import get_model, save_item, load_item
 from flwr.common.logger import log
 from logging import WARNING, INFO
 
@@ -53,8 +53,8 @@ class Client(ClientBase):
         model.train()
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(
-            model.parameters(), 
-            lr=self.args.learning_rate, 
+            model.parameters(),
+            lr=self.args.learning_rate,
             momentum=self.args.momentum
         )
         protos = load_item("protos", self.args.save_folder_path)
@@ -145,6 +145,6 @@ if __name__ == "__main__":
 
     # Start client
     fl.client.start_client(
-        server_address=args.server_address, 
+        server_address=args.server_address,
         client=Client(args, model).to_client()
     )

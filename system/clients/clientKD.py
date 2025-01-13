@@ -8,7 +8,7 @@ import flwr as fl
 import torch.nn.functional as F
 from collections import OrderedDict
 from clientBase import ClientBase
-from utils.models import get_model, get_auxiliary_model, save_item, load_item
+from .utils.models import get_model, get_auxiliary_model, save_item, load_item
 from flwr.common.logger import log
 from logging import WARNING, INFO
 
@@ -20,11 +20,11 @@ def recover(compressed_param):
         if len(compressed_param[k]) == 3:
             # use np.matmul to support high-dimensional CNN param
             compressed_param[k] = np.matmul(
-                compressed_param[k][0] * compressed_param[k][1][..., None, :], 
+                compressed_param[k][0] * compressed_param[k][1][..., None, :],
                     compressed_param[k][2])
     return compressed_param
 
-    
+
 def decomposition(param_iter, energy):
     compressed_param = {}
     for name, param in param_iter:
@@ -61,7 +61,7 @@ def decomposition(param_iter, energy):
             compressed_param_cpu=param_cpu
 
         compressed_param[name] = compressed_param_cpu
-        
+
     return compressed_param
 
 
@@ -101,18 +101,18 @@ class Client(ClientBase):
         KL = nn.KLDivLoss()
         MSE = nn.MSELoss()
         optimizer = torch.optim.SGD(
-            model.parameters(), 
-            lr=self.args.learning_rate, 
+            model.parameters(),
+            lr=self.args.learning_rate,
             momentum=self.args.momentum
         )
         optimizer_W = torch.optim.SGD(
-            W_h.parameters(), 
-            lr=self.args.learning_rate, 
+            W_h.parameters(),
+            lr=self.args.learning_rate,
             momentum=self.args.momentum
         )
         optimizer_aux = torch.optim.SGD(
-            auxiliary_model.parameters(), 
-            lr=self.args.auxiliary_learning_rate, 
+            auxiliary_model.parameters(),
+            lr=self.args.auxiliary_learning_rate,
             momentum=self.args.momentum
         )
         for _ in range(self.args.epochs):
@@ -125,9 +125,9 @@ class Client(ClientBase):
 
                 CE_loss = criterion(outputs, labels)
                 CE_loss_aux = criterion(outputs_aux, labels)
-                L_d = KL(F.log_softmax(outputs, dim=1), 
+                L_d = KL(F.log_softmax(outputs, dim=1),
                          F.softmax(outputs_aux, dim=1)) / (CE_loss + CE_loss_aux)
-                L_d_aux = KL(F.log_softmax(outputs_aux, dim=1), 
+                L_d_aux = KL(F.log_softmax(outputs_aux, dim=1),
                              F.softmax(outputs, dim=1)) / (CE_loss + CE_loss_aux)
                 L_h = MSE(reps, W_h(reps_aux)) / (CE_loss + CE_loss_aux)
                 L_h_aux = MSE(reps, W_h(reps_aux)) / (CE_loss + CE_loss_aux)
@@ -180,6 +180,6 @@ if __name__ == "__main__":
 
     # Start client
     fl.client.start_client(
-        server_address=args.server_address, 
+        server_address=args.server_address,
         client=Client(args, model, auxiliary_model).to_client()
     )

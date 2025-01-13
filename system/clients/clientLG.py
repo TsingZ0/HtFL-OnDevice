@@ -1,15 +1,17 @@
 import argparse
 import os
 import time
+from collections import OrderedDict
 import torch
 import flwr as fl
-from collections import OrderedDict
-from clientBase import ClientBase
-from utils.models import get_model, save_item, load_item
 from flwr.common.logger import log
 from logging import WARNING, INFO
+from colext import MonitorFlwrClient
 
+from .clientBase import ClientBase
+from .utils.models import get_model, save_item, load_item
 
+@MonitorFlwrClient
 class Client(ClientBase):
     def __init__(self, args, model):
         super().__init__(args, model)
@@ -51,6 +53,6 @@ if __name__ == "__main__":
 
     # Start client
     fl.client.start_client(
-        server_address=args.server_address, 
+        server_address=args.server_address,
         client=Client(args, model).to_client()
     )
