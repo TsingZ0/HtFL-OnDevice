@@ -12,58 +12,6 @@ from .utils.models import get_model, get_auxiliary_model, save_item, load_item
 from flwr.common.logger import log
 from logging import WARNING, INFO
 
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-
-
-def recover(compressed_param):
-    for k in compressed_param.keys():
-        if len(compressed_param[k]) == 3:
-            # use np.matmul to support high-dimensional CNN param
-            compressed_param[k] = np.matmul(
-                compressed_param[k][0] * compressed_param[k][1][..., None, :],
-                    compressed_param[k][2])
-    return compressed_param
-
-
-def decomposition(param_iter, energy):
-    compressed_param = {}
-    for name, param in param_iter:
-        try:
-            param_cpu = param.detach().cpu().numpy()
-        except:
-            param_cpu = param
-        # refer to https://github.com/wuch15/FedKD/blob/main/run.py#L187
-        if len(param_cpu.shape)>1 and param_cpu.shape[0]>1 and 'embeddings' not in name:
-            u, sigma, v = np.linalg.svd(param_cpu, full_matrices=False)
-            # support high-dimensional CNN param
-            if len(u.shape)==4:
-                u = np.transpose(u, (2, 3, 0, 1))
-                sigma = np.transpose(sigma, (2, 0, 1))
-                v = np.transpose(v, (2, 3, 0, 1))
-            threshold=0
-            if np.sum(np.square(sigma))==0:
-                compressed_param_cpu=param_cpu
-            else:
-                for singular_value_num in range(len(sigma)):
-                    if np.sum(np.square(sigma[:singular_value_num]))>energy*np.sum(np.square(sigma)):
-                        threshold=singular_value_num
-                        break
-                u=u[:, :threshold]
-                sigma=sigma[:threshold]
-                v=v[:threshold, :]
-                # support high-dimensional CNN param
-                if len(u.shape)==4:
-                    u = np.transpose(u, (2, 3, 0, 1))
-                    sigma = np.transpose(sigma, (1, 2, 0))
-                    v = np.transpose(v, (2, 3, 0, 1))
-                compressed_param_cpu=[u,sigma,v]
-        elif 'embeddings' not in name:
-            compressed_param_cpu=param_cpu
-
-        compressed_param[name] = compressed_param_cpu
-
-    return compressed_param
-
 
 class Client(ClientBase):
     def __init__(self, args, model, auxiliary_model):
@@ -76,15 +24,12 @@ class Client(ClientBase):
     # send
     def get_parameters(self, config):
         auxiliary_model = load_item("auxiliary_model", self.args.save_folder_path)
-        compressed_parameters = decomposition(auxiliary_model.state_dict().items(), self.energy)
-        # TODO ERROR: ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 3 dimensions. The detected shape was (3, 64, 3) + inhomogeneous part.
-        return [np.array(val) for _, val in compressed_parameters.items()]
+        return [val.cpu().numpy() for _, val in auxiliary_model.state_dict().items()]
 
     # receive
-    def set_parameters(self, compressed_parameters):
+    def set_parameters(self, parameters):
         auxiliary_model = load_item("auxiliary_model", self.args.save_folder_path)
-        compressed_params_dict = zip(auxiliary_model.state_dict().keys(), compressed_parameters)
-        params_dict = recover(compressed_params_dict)
+        params_dict = zip(auxiliary_model.state_dict().keys(), parameters)
         state_dict = OrderedDict({key: torch.tensor(value) for key, value in params_dict})
         auxiliary_model.load_state_dict(state_dict, strict=True)
         save_item(auxiliary_model, "auxiliary_model", self.args.save_folder_path)
