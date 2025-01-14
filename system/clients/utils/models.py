@@ -56,6 +56,21 @@ def get_model(args):
             num_classes=args.num_classes,
             pretrained=args.pretrained,
         )
+    elif args.model == "ResNet50":
+        model = torchvision.models.resnet50(
+            num_classes=args.num_classes,
+            pretrained=args.pretrained,
+        )
+    elif args.model == "ResNet101":
+        model = torchvision.models.resnet101(
+            num_classes=args.num_classes,
+            pretrained=args.pretrained,
+        )
+    elif args.model == "ResNet152":
+        model = torchvision.models.resnet152(
+            num_classes=args.num_classes,
+            pretrained=args.pretrained,
+        )
     elif args.model == "HARCNN":
         model = HARCNN()
     else:
