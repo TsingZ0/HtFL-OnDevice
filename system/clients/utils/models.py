@@ -21,6 +21,26 @@ def load_item(item_name, item_path=None):
         return None
     
 
+class SimpleCNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.encoder = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
+        self.fc = None  # either way it'll be overwritten by BaseHeadSplit
+
+    def forward(self, x):
+        out = self.encoder(x)
+        out = torch.flatten(out, 1)
+        out = self.fc(out)
+        return out
+
+
 # split an original model into a base and a head
 class BaseHeadSplit(nn.Module):
     def __init__(self, args, model):
@@ -39,7 +59,7 @@ class BaseHeadSplit(nn.Module):
             raise('The base model does not have a classification head.')
 
         self.head = nn.Linear(args.feature_dim, args.num_classes)
-        
+
     def forward(self, x):
         out = self.base(x)
         out = self.head(out)
@@ -57,6 +77,8 @@ def get_model(args):
             num_classes=args.num_classes, 
             pretrained=args.pretrained, 
         )
+    elif args.model == "SimpleCNN":
+        model = SimpleCNN()
     else:
         raise NotImplementedError
     return BaseHeadSplit(args, model)
