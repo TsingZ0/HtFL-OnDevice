@@ -54,6 +54,7 @@ class ClientBase(fl.client.NumPyClient):
         """Load training and test set."""
 
         if data_utils.has_local_device_data():
+            log(INFO, "Found device local data")
             trainset = data_utils.read_client_local_data(train=True)
             testset  = data_utils.read_client_local_data(train=False)
         # otherwise default to CIFAR10

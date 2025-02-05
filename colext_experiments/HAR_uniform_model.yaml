@@ -3,6 +3,7 @@ project: htfl-ondevice
 # deployer: local_py
 
 code:
+  path: "../"
   client:
     command: >-
       ./config_device_data.sh ${COLEXT_DATASETS}/HAR ${COLEXT_CLIENT_ID} &&
@@ -14,12 +15,11 @@ code:
       python3 -m system.servers.serverLG
       --min_fit_clients=${COLEXT_N_CLIENTS}
       --min_available_clients=${COLEXT_N_CLIENTS}
-      --num_rounds=3
+      --num_rounds=30
 
-devices:
-  - { device_type: JetsonAGXOrin,  count: 2 }
-  - { device_type: JetsonOrinNano, count: 2 }
+clients:
+  - dev_type: JetsonAGXOrin
+    count: 2
 
-monitoring:
-  scraping_interval: 0.3  # in seconds
-  push_to_db_interval: 10 # in seconds
+  - dev_type: JetsonOrinNano
+    count: 2

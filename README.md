@@ -22,7 +22,7 @@ The HtFL frameworks with ~~strikethrough~~ indicate the ones that are not yet im
   - Full-heterogeneity-based HtFL
     - **FedDistill (FD)** — [Communication-Efficient On-Device Machine Learning: Federated Distillation and Augmentation under Non-IID Private Data](https://arxiv.org/pdf/1811.11479.pdf) *2018*
     - **FML** — [Federated Mutual Learning](https://arxiv.org/abs/2006.16765) *2020*
-    - **FedProto** — [FedProto: Federated Prototype Learning across Heterogeneous Clients](https://ojs.aaai.org/index.php/AAAI/article/view/20819) *AAAI 2022* 
+    - **FedProto** — [FedProto: Federated Prototype Learning across Heterogeneous Clients](https://ojs.aaai.org/index.php/AAAI/article/view/20819) *AAAI 2022*
     - **FedKD** — [Communication-efficient federated learning via knowledge distillation](https://www.nature.com/articles/s41467-022-29763-x) *Nature Communications 2022*
     - **FedTGP** — [FedTGP: Trainable Global Prototypes with Adaptive-Margin-Enhanced Contrastive Learning for Data and Model Heterogeneity in Federated Learning](https://arxiv.org/abs/2401.03230) *AAAI 2024*
     - ~~**FedKTL** — [An Upload-Efficient Scheme for Transferring Knowledge From a Server-Side Pre-trained Generator to Clients in Heterogeneous Federated Learning](https://arxiv.org/abs/2403.15760) *CVPR 2024* *(Note: FedKTL requires pre-trained generators to run, please refer to its [project page](https://github.com/TsingZ0/FedKTL) for download links.)*~~
@@ -30,7 +30,64 @@ The HtFL frameworks with ~~strikethrough~~ indicate the ones that are not yet im
 ## How to Use
 
 1. Distribute and store realistic datasets (`.npz` files) on all devices using a designated strategy (*to be determined*). Please read the `config.json` file for the details of each dataset. Each `.npz` file can be directly used by PyTorch's DataLoader.
-2. For each HtFL frameworks, deploy the `./system/servers/serverNAME.py` and `./system/clients/clientNAME.py` (with `./system/utils`) to the workstation and devices, respectively. The server and client models will be saved to their `checkpoints` folders, respectively. 
+2. For each HtFL frameworks, deploy the `./system/servers/serverNAME.py` and `./system/clients/clientNAME.py` (with `./system/utils`) to the workstation and devices, respectively. The server and client models will be saved to their `checkpoints` folders, respectively.
 3. Execute the server file with the appropriate configurations (`argparse`), which varies by HtFL framework.
-4. Execute the client file with the appropriate configurations (`argparse`), which varies by HtFL framework. Real data loading not implemented yet. 
+4. Execute the client file with the appropriate configurations (`argparse`), which varies by HtFL framework. Real data loading not implemented yet.
 5. Checkpoints are stored locally on clients in `args.save_folder_path`, with timestamps used by default.
+
+## CoLExT Experiment Deployment
+
+Deploying experiments on CoLExT requires the specification of a CoLExT config file. An example is shown below. Additional examples will be placed inside `colext_experiments/`.
+
+Important notes:
+1. Before running the client Python code, client devices assign their own data based on the client ID provided by CoLExT, using the `./config_device_data.sh` script.
+2. It's possible to specify additional arguments to a particular client group, allowing different arguments to be assigned to different groups.
+
+Example config:
+```yaml
+# colext_experiments/example_config.yaml
+project: htfl-ondevice
+
+code:
+  # Path to the code root dir, relative to the config file
+  # Defaults to the config file dir if omitted
+  # The working directory is set to this path
+  path: "../"
+  client:
+    command: >-
+      ./config_device_data.sh ${COLEXT_DATASETS}/iWildCam ${COLEXT_CLIENT_ID} &&
+      python3 -m system.clients.clientLG
+      --server_address=${COLEXT_SERVER_ADDRESS}
+      --num_classes=181
+  server:
+    command: >-
+      python3 -m system.servers.serverLG
+      --min_fit_clients=${COLEXT_N_CLIENTS}
+      --min_available_clients=${COLEXT_N_CLIENTS}
+      --num_rounds=10
+
+clients:
+  - dev_type: JetsonAGXOrin
+    count: 1
+    # Add additional arguments this client group
+    add_args: "--model=ResNet101"
+
+  - dev_type: JetsonOrinNano
+    count: 2
+    add_args: "--model=ResNet50"
+
+  - dev_type: OrangePi5B
+    count: 2
+    add_args: "--model=ResNet18"
+
+  - dev_type: OrangePi5B
+    # If `count` is not specified, it's assumed to be 1
+    add_args: "--model=ResNet34"
+```
+
+To launch the experiment:
+```bash
+colext_launch_job -c colext_experiments/example_config.yaml
+```
+
+For an up-to-date reference on the CoLExT config file, refer to CoLExT's [README](https://github.com/sands-lab/colext/blob/main/README.md).
