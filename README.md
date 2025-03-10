@@ -41,7 +41,7 @@ Deploying experiments on CoLExT requires the specification of a CoLExT config fi
 
 Important notes:
 1. Before running the client Python code, client devices assign their own data based on the client ID provided by CoLExT, using the `./config_device_data.sh` script.
-2. It's possible to specify additional arguments to a particular client group, allowing different arguments to be assigned to different groups.
+2. It's possible to specify additional arguments to a particular client group, allowing different client groups to receive different arguments.
 
 Example config:
 ```yaml
