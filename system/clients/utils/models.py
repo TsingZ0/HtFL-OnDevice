@@ -5,6 +5,7 @@ import torch.nn as nn
 import torchvision
 from flwr.common.logger import log
 from logging import INFO
+from resnet import *
 
 
 def save_item(item, item_name, item_path=None):
@@ -71,6 +72,14 @@ def get_model(args):
             num_classes=args.num_classes,
             pretrained=args.pretrained,
         )
+    elif args.model == "ResNet4":
+        model = resnet4(num_classes=args.num_classes)
+    elif args.model == "ResNet6":
+        model = resnet6(num_classes=args.num_classes)
+    elif args.model == "ResNet8":
+        model = resnet8(num_classes=args.num_classes)
+    elif args.model == "ResNet10":
+        model = resnet10(num_classes=args.num_classes)
     elif args.model == "HARCNN":
         model = HARCNN()
     else:
@@ -89,6 +98,14 @@ def get_auxiliary_model(args):
             num_classes=args.num_classes,
             pretrained=args.pretrained,
         )
+    elif args.model == "ResNet4":
+        model = resnet4(num_classes=args.num_classes)
+    elif args.model == "ResNet6":
+        model = resnet6(num_classes=args.num_classes)
+    elif args.model == "ResNet8":
+        model = resnet8(num_classes=args.num_classes)
+    elif args.model == "ResNet10":
+        model = resnet10(num_classes=args.num_classes)
     else:
         raise NotImplementedError
     return BaseHeadSplit(args, model)
