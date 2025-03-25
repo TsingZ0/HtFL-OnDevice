@@ -1,12 +1,10 @@
-
 import os
 import torch
 import torch.nn as nn
 import torchvision
 from flwr.common.logger import log
 from logging import INFO
-from resnet import *
-
+from .resnet import *
 
 def save_item(item, item_name, item_path=None):
     if not os.path.exists(item_path):
