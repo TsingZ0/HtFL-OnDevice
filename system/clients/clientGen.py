@@ -7,10 +7,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import flwr as fl
 from collections import OrderedDict
-from clientBase import ClientBase
-from .utils.models import get_model, save_item, load_item
 from flwr.common.logger import log
 from logging import WARNING, INFO
+
+from .clientBase import ClientBase
+from .utils.models import get_model, save_item, load_item
 
 
 # based on official code https://github.com/zhuangdizhu/FedGen/blob/main/FLAlgorithms/trainmodel/generator.py

@@ -11,6 +11,7 @@ from colext import MonitorFlwrClient
 from .clientBase import ClientBase
 from .utils.models import get_model, save_item, load_item
 
+
 @MonitorFlwrClient
 class Client(ClientBase):
     def __init__(self, args, model):

@@ -6,10 +6,11 @@ import torch.nn as nn
 import flwr as fl
 import torch.nn.functional as F
 from collections import OrderedDict
-from clientBase import ClientBase
-from .utils.models import get_model, get_auxiliary_model, save_item, load_item
 from flwr.common.logger import log
 from logging import WARNING, INFO
+
+from .clientBase import ClientBase
+from .utils.models import get_model, get_auxiliary_model, save_item, load_item
 
 
 class Client(ClientBase):

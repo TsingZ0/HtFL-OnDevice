@@ -6,10 +6,11 @@ import torch
 import torch.nn as nn
 import flwr as fl
 from collections import OrderedDict, defaultdict
-from clientBase import ClientBase
-from .utils.models import get_model, save_item, load_item
 from flwr.common.logger import log
 from logging import WARNING, INFO
+
+from .clientBase import ClientBase
+from .utils.models import get_model, save_item, load_item
 
 
 def agg_func(protos):
