@@ -7,10 +7,10 @@ from torch.utils.data import DataLoader
 from flwr.common.logger import log
 from logging import WARNING, INFO
 from system.utils import data_utils
+
 from .utils.models import save_item, load_item
 
 warnings.simplefilter("ignore")
-
 
 class ClientBase(fl.client.NumPyClient):
     def __init__(self, args, model):
@@ -29,11 +29,11 @@ class ClientBase(fl.client.NumPyClient):
 
     def fit(self, parameters, config):
         self.set_parameters(parameters)
-        loss, accuracy = self.test()
-        log(INFO, "Before local training\t Loss: {:.4f}, Accuracy: {:.4f}".format(loss, accuracy))
+        # loss, accuracy = self.test()
+        # log(INFO, "Before local training\t Loss: {:.4f}, Accuracy: {:.4f}".format(loss, accuracy))
         self.train()
-        loss, accuracy = self.test()
-        log(INFO, "After local training\t Loss: {:.4f}, Accuracy: {:.4f}".format(loss, accuracy))
+        # loss, accuracy = self.test()
+        # log(INFO, "After local training\t Loss: {:.4f}, Accuracy: {:.4f}".format(loss, accuracy))
         uploads = self.get_parameters(config={})
         num_train_examples = self.num_examples["trainset"]
         metrics = {}
