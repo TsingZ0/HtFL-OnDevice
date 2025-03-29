@@ -91,3 +91,21 @@ colext_launch_job -c colext_experiments/example_config.yaml
 ```
 
 For an up-to-date reference on the CoLExT config file, refer to CoLExT's [README](https://github.com/sands-lab/colext/blob/main/README.md).
+
+
+## CoLExT Benchmarks
+
+Easy to run benchmarks are available in `colext_experiments/benchmarks`.
+The following benchmarks are available:
+
+- `resnet_models/`: benchmark several resnet models across all devices types
+- `devs_w_same_energy_efficiency/`: benchmark all HtFL frameworks using a model per device that ensures a similar energy budget for each device. The energy threshold was selected to be the median energy spent in a round for the the fastest device based on the the `resnet_models` benchmark.
+
+How to run a benchmark:
+```bash
+$ cd colexT_experiments/benchmark
+$ ./run_benchmark.sh <path_to_benchmark_folder>
+# After benchmark is finished, plot the results
+# Results are available inside <path_to_benchmark_folder>/output/plots
+$ python3 plot_benchmark.py <path_to_benchmark_folder>
+```

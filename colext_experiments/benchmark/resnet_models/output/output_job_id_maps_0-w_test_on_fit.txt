@@ -1,0 +1,5 @@
+1209=ResNet18
+1210=ResNet34
+1211=ResNet50
+1216=ResNet101
+1217=ResNet152

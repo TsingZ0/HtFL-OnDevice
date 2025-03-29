@@ -1,0 +1,5 @@
+1238=LG-Partial_Het
+1241=FD-Full_Het
+1242=FML-Full_Het
+1245=KD-Full_Het
+1246=Proto-Full_Het
