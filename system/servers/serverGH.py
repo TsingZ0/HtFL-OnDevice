@@ -1,6 +1,7 @@
 import argparse
 import os
 import time
+from colext import MonitorFlwrStrategy
 import flwr as fl
 import torch
 import torch.nn as nn
@@ -19,7 +20,7 @@ def get_head(args):
         raise NotImplementedError
     return head
 
-
+@MonitorFlwrStrategy
 class FedGH(fl.server.strategy.FedAvg):
     def __init__(self,
             fraction_fit,

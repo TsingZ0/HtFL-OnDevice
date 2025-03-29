@@ -11,7 +11,7 @@ from flwr.common import parameters_to_ndarrays, ndarrays_to_parameters
 from collections import defaultdict
 from torch.utils.data import DataLoader
 from .utils.misc import weighted_metrics_avg, save_item, load_item
-
+from colext import MonitorFlwrStrategy
 
 def proto_cluster(protos_list):
     proto_clusters = defaultdict(list)
@@ -49,7 +49,7 @@ class Trainable_Global_Prototypes(nn.Module):
 
         return out
 
-
+@MonitorFlwrStrategy
 class FedTGP(fl.server.strategy.FedAvg):
     def __init__(self,
             fraction_fit,

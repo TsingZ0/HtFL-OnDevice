@@ -9,6 +9,7 @@ import flwr as fl
 from collections import OrderedDict
 from flwr.common.logger import log
 from logging import WARNING, INFO
+from colext import MonitorFlwrClient
 
 from .clientBase import ClientBase
 from .utils.models import get_model, save_item, load_item
@@ -43,7 +44,7 @@ class Generator(nn.Module):
 
         return z
 
-
+@MonitorFlwrClient
 class Client(ClientBase):
     def __init__(self, args, model):
         super().__init__(args, model)

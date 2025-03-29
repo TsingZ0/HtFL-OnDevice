@@ -1,6 +1,7 @@
 import argparse
 import os
 import time
+from colext import MonitorFlwrStrategy
 import flwr as fl
 import numpy as np
 import torch
@@ -52,7 +53,7 @@ class Generator(nn.Module):
 
         return z
 
-
+@MonitorFlwrStrategy
 class FedGH(fl.server.strategy.FedAvg):
     def __init__(self,
             fraction_fit,
