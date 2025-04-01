@@ -101,7 +101,9 @@ class FedTGP(fl.server.strategy.FedAvg):
 
         # Convert results
         uploaded_protos_per_client = [
-            [torch.tensor(proto) for proto in parameters_to_ndarrays(fit_res.parameters)]
+            [torch.tensor(proto) 
+             for proto in parameters_to_ndarrays(fit_res.parameters)
+             if len(proto.shape) > 0]
             for _, fit_res in results
         ]
         uploaded_protos = []
