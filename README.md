@@ -58,7 +58,7 @@ code:
       ./config_device_data.sh ${COLEXT_DATASETS}/iWildCam ${COLEXT_CLIENT_ID} &&
       python3 -m system.clients.clientLG
       --server_address=${COLEXT_SERVER_ADDRESS}
-      --num_classes=181
+      --num_classes=158
   server:
     command: >-
       python3 -m system.servers.serverLG
