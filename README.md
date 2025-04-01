@@ -101,7 +101,7 @@ The following benchmarks are available:
 - `resnet_models/`: benchmark several resnet models across all devices types
 - `devs_w_same_energy_efficiency/`: benchmark all HtFL frameworks using a model per device that ensures a similar energy budget for each device. The energy threshold was selected to be the median energy spent in a round for the the fastest device based on the the `resnet_models` benchmark.
 
-How to run a benchmark:
+### How to run a benchmark:
 ```bash
 $ cd colexT_experiments/benchmark
 $ ./run_benchmark.sh <path_to_benchmark_folder>
@@ -109,3 +109,11 @@ $ ./run_benchmark.sh <path_to_benchmark_folder>
 # Results are available inside <path_to_benchmark_folder>/output/plots
 $ python3 plot_benchmark.py <path_to_benchmark_folder>
 ```
+
+### Adding or modifying benchmarks
+Benchmarks consist of running multiple `colext_config.yaml` files. To avoid manually generating these files, each benchmark folder contains a `gen_configs.py` script that will take care of generating all the necessary configurations and output them to `<benchmark_folder>/output/colext_configs`. This script should contain all the logic required to create the needed configuration files for the benchmark. See the existing benchmark folders for examples.
+
+With the script in place, running `run_benchmark.sh <benchmark_folder>` will:
+1. Invoke the `gen_configs.py` within the benchmark folder to generate the CoLExT configuration files
+2. Deploy an experiment on CoLExT for each configuration, recording the corresponding job ID for the experiment
+3. Store the job IDs for later use in data collection and plotting
