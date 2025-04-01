@@ -7,7 +7,7 @@ template_experiment = {
     "name": "benchmark_HtFL_w_same_power_eff",
     "project": "htfl-ondevice",
     "code": {
-        "path": "../../../../", # root folder
+        "path": "../../../../../", # root folder
         "client": {
             "command": (
                 "./config_device_data.sh ${COLEXT_DATASETS}/iWildCam ${COLEXT_CLIENT_ID} && "
@@ -64,6 +64,9 @@ for algorithm_group in HtFL_algorithms:
             exp["code"][target]["command"] = (
                 exp["code"][target]["command"].replace("{{ FL_ALGORITHM }}", algorithm)
             )
+
+        if algorithm == "Gen":
+            exp["code"]["server"]["command"] += " --num_classes=158"
 
         with open(filename, "w", encoding="utf-8") as f:
             yaml.dump(exp, f, sort_keys=False)
