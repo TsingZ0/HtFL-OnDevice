@@ -13,10 +13,13 @@ fi
 benchmark_folder=$(basename $1)
 echo "Running benchmark for folder at $benchmark_folder"
 mkdir -p "$benchmark_folder/output"
-declare -a job_id_maps
 
-echo "Running gen_configs for benchmark"
+echo "Creating CoLExT configs using gen_configs.py for this benchmark"
 python3 $benchmark_folder/gen_configs.py
+
+# As jobs finish, print job ids as a map between job id and name. Eg. 1223=ResNet152
+job_id_maps_file="$benchmark_folder/output/output_job_id_maps_`date +%Y%m%d%H%M%S`.txt"
+echo "Prepared output file for job id maps '$job_id_maps_file'"
 
 for config in "$benchmark_folder"/output/colext_configs/*; do
     echo "Launching job based on config at: $config"
@@ -33,13 +36,10 @@ for config in "$benchmark_folder"/output/colext_configs/*; do
     fi
     echo "Finished experiment with job id = $job_id"
     config_id=$(basename "$config" .yaml | cut -d_ -f2-)
-    job_id_maps+=("$job_id=$config_id")
+    # Append job id map to output file
+    echo "$job_id=$config_id" >> $job_id_maps_file
 done
 
 echo
-echo "Finished all experiments"
-# Print all job ids as comma separated list and save it in a file for future use
-output_file="$benchmark_folder/output/output_job_id_maps_`date +%Y%m%d%H%M%S`.txt"
-printed_map=$(printf '%s\n' "${job_id_maps[@]}")
-printf "Job IDs: [\n%s\n]\n" "$printed_map"
-echo "$printed_map" > $output_file
+echo "Finished all experiments. Resulting job ids:"
+cat $job_id_maps_file
