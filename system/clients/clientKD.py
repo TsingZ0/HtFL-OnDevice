@@ -113,7 +113,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_classes", type=int, default=10)
     parser.add_argument("--pretrained", type=bool, default=False)
     parser.add_argument("--server_address", type=str, default="127.0.0.1:8080")
-    parser.add_argument("--auxiliary_model", type=str, default="ResNet18")
+    parser.add_argument("--auxiliary_model", type=str, default="ResNet4")
     parser.add_argument("--T_start", type=float, default=0.95)
     parser.add_argument("--T_end", type=float, default=0.98)
     args = parser.parse_args()
