@@ -14,7 +14,7 @@ def make_plots(job_ids_file, benchmark_output, args):
     if not os.path.isdir(plots_dir):
         os.makedirs(plots_dir)
 
-    job_summaries_df, round_metrics_df = prepare_data(job_ids_file, benchmark_output, args.force_collect)
+    job_summaries_df, round_metrics_df, hw_metrics_df = prepare_data(job_ids_file, benchmark_output, args.force_collect)
 
     plot_totals(round_metrics_df, job_summaries_df, plots_dir)
 
@@ -36,13 +36,21 @@ def make_plots(job_ids_file, benchmark_output, args):
                     }
                 )
 
-    header_cols = ["Round time (s)", "Training time (s)", "Energy in round (J)"]
+    header_cols = [
+        "Round time (s)", "Training time (s)", "Idle time (s)",
+        "Energy training (J)", "Energy in round (J)",
+        "Data rcvd in round (MiB)", "Data sent in round (MiB)",
+        "Avg CPU Util (%)", "Max CPU Util (%)",
+        "Avg GPU Util (%)", "Max GPU Util (%)",
+        "Avg Mem Util (MiB)", "Max Mem Util (MiB)",
+    ]
     cat_plot(job_summaries_df, plots_dir, "per_job_round", header_cols, x_col="job_id", hue_col="dev_type",
                 # extra_plot_args = {
                 #     "errorbar": None,
                 #     "estimator": np.max
                 #     }
-                 )
+                )
+    cat_plot(job_summaries_df, plots_dir, "per_dev_round", header_cols, x_col="dev_type", hue_col="job_id")
 
 def prepare_data(job_ids_file, benchmark_output, force_collect=False):
     print(f"Reading job ids from '{job_ids_file}'")
@@ -51,14 +59,14 @@ def prepare_data(job_ids_file, benchmark_output, force_collect=False):
     job_ids = job_id_map.keys()
 
     collect_job_metrics(job_ids, benchmark_output, force_collect)
-    job_summaries_df = read_colext_metric_file_as_df("client_rounds_summary.csv", job_ids, benchmark_output)
-    round_metrics_df = read_colext_metric_file_as_df("round_metrics.csv", job_ids, benchmark_output)
+    job_summaries_df = read_colext_metric_file_as_df("client_rounds_summary.csv", job_id_map, benchmark_output)
+    round_metrics_df = read_colext_metric_file_as_df("round_metrics.csv", job_id_map, benchmark_output)
+    hw_metrics_df = read_colext_metric_file_as_df("hw_metrics_cleaned.csv", job_id_map, benchmark_output)
 
-    # Map job id to experiment config file name. Ex: 1209=ResNet18
-    job_summaries_df["job_id"] = job_summaries_df["job_id"].map(job_id_map)
-    round_metrics_df["job_id"] = round_metrics_df["job_id"].map(job_id_map)
+    # Add idle column
+    job_summaries_df["Idle time (s)"] = job_summaries_df["Round time (s)"] - job_summaries_df["Training time (s)"]
 
-    return job_summaries_df, round_metrics_df
+    return job_summaries_df, round_metrics_df, hw_metrics_df
 
 def collect_job_metrics(job_ids, output_parent_dir, force_collect=False):
     for job_id in job_ids:
@@ -76,10 +84,10 @@ def collect_job_metrics(job_ids, output_parent_dir, force_collect=False):
         if result.returncode != 0:
             print(f"ERROR: Could not collect job metrics for job_id = {job_id}")
 
-def read_colext_metric_file_as_df(metric_file, job_ids, job_metrics_parent_dir):
+def read_colext_metric_file_as_df(metric_file, job_id_map, job_metrics_parent_dir):
     print(f"Reading metrics from {metric_file} and merging as df")
     result_df = []
-    for job_id in job_ids:
+    for job_id, job_name in job_id_map.items():
         file_path = os.path.join(
             job_metrics_parent_dir,
             "colext_metrics",
@@ -87,19 +95,23 @@ def read_colext_metric_file_as_df(metric_file, job_ids, job_metrics_parent_dir):
             "raw",
             metric_file
         )
-        df = pd.read_csv(file_path, parse_dates=["start_time", "end_time"])
-        df = df.assign(job_id=job_id)
+
+        date_columns = ["start_time", "end_time"]
+        if metric_file.startswith("hw_metrics"):
+            date_columns = ["time"]
+        df = pd.read_csv(file_path, parse_dates=date_columns)
+        df = df.assign(job_id=job_name)
         result_df.append(df)
 
     return pd.concat(result_df, ignore_index=True)
 
-def cat_plot(job_summaries_df, plots_dir, name_suffix, header_cols,
+def cat_plot(df, plots_dir, name_suffix, header_cols,
                  x_col="dev_type", hue_col="job_id", y_limit_dev=None, extra_plot_args={}):
     # Prepare dataset for plotting
     id_vars=["dev_type", "job_id", "stage"]
     cols = header_cols + id_vars
-    job_summaries_df = job_summaries_df[cols]
-    df_long = pd.melt(job_summaries_df, id_vars=id_vars, var_name='metric')
+    df = df[cols]
+    df_long = pd.melt(df, id_vars=id_vars, var_name='metric')
 
     g = sns.catplot(x=x_col, y="value", hue=hue_col, data=df_long,
                     col="metric", row="stage",
@@ -116,7 +128,7 @@ def cat_plot(job_summaries_df, plots_dir, name_suffix, header_cols,
 
     # Set y axis limit as the max median value bench device * max_increase
     if y_limit_dev:
-        bench_dev_df = job_summaries_df[job_summaries_df["dev_type"] == y_limit_dev]
+        bench_dev_df = df[df["dev_type"] == y_limit_dev]
         max_increase = 1.7
         for ax in g.axes.flat:
             (stage, col) = ax.get_title().split(' | ', 1)
