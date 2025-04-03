@@ -1,5 +1,6 @@
 import copy
 import os
+from pathlib import Path
 import shutil
 import yaml
 
@@ -45,11 +46,11 @@ exclude_models_for_dev = {
 }
 
 # Clean existing output dir before we create new configs
-script_dir = os.path.dirname(os.path.realpath(__file__))
-config_dir = os.path.join(script_dir, "output", "colext_configs")
-if os.path.exists(config_dir):
+script_dir = Path(__file__).resolve().parent
+config_dir = script_dir / "output" / "colext_configs"
+if config_dir.exists():
     shutil.rmtree(config_dir)
-os.makedirs(config_dir)
+config_dir.mkdir()
 
 # Generate YAML files for each model
 for config_id, model_name in enumerate(models):

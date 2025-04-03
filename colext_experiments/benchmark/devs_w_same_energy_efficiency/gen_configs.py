@@ -1,5 +1,6 @@
 import copy
 import os
+from pathlib import Path
 import shutil
 import yaml
 
@@ -36,27 +37,25 @@ template_experiment = {
 }
 
 HtFL_algorithms = [
-    {"type": "group-heterogeneity", "algorithms": []},
-    {"type": "partial-heterogeneity", "algorithms": ["LG", "Gen", "GH"]},
-    {"type": "full-heterogeneity", "algorithms": ["FD", "FML", "KD",  "Proto", "TGP"]}
+    ("Group_Het", []),
+    ("Partial_Het", ["LG", "Gen", "GH"]),
+    ("Full_Het", ["FD", "FML", "KD",  "Proto", "TGP"])
 ]
 
 # Clean existing output dir before we create new configs
-script_dir = os.path.dirname(os.path.realpath(__file__))
-config_dir = os.path.join(script_dir, "output", "colext_configs")
-if os.path.exists(config_dir):
+script_dir = Path(__file__).resolve().parent
+config_dir = script_dir / "output" / "colext_configs"
+if config_dir.exists():
     shutil.rmtree(config_dir)
-os.makedirs(config_dir)
+config_dir.mkdir()
 
 # Generate YAML files for each algorithm
 config_id = 0
-for algorithm_group in HtFL_algorithms:
-    algorithm_type = algorithm_group["type"]
-    algorithms = algorithm_group["algorithms"]
+for (algorithm_type, algorithms) in HtFL_algorithms:
     for algorithm in algorithms:
         filename = os.path.join(
             config_dir,
-            f"{config_id}_{algorithm_type}_{algorithm}.yaml"
+            f"{config_id}_{algorithm}-{algorithm_type}.yaml"
         )
 
         exp = copy.deepcopy(template_experiment)
