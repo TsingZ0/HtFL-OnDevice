@@ -65,7 +65,7 @@ for algorithm_group in HtFL_algorithms:
                 exp["code"][target]["command"].replace("{{ FL_ALGORITHM }}", algorithm)
             )
 
-        if algorithm == "Gen":
+        if algorithm in ["Gen", "GH", "TGP"]:
             exp["code"]["server"]["command"] += " --num_classes=158"
 
         with open(filename, "w", encoding="utf-8") as f:
