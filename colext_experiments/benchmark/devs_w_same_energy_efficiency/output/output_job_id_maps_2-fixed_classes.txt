@@ -1,8 +1,0 @@
-1249=LG-Partial_Het
-1250=Gen-Partial_Het
-1252=GH-Partial_Het
-1253=FD-Full_Het
-1254=FML-Full_Het
-1255=KD-Full_Het
-1256=Proto-Full_Het
-1257=TGP-Full_Het
