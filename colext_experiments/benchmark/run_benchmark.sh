@@ -23,9 +23,10 @@ echo "Prepared output file for job id maps '$job_id_maps_file'"
 
 for config in "$benchmark_folder"/output/colext_configs/*; do
     echo "Launching job based on config at: $config"
-    colext_launch_job -c $config
-    # colext_launch_job -c $config > colext_launch_job.output 2>&1
+    # colext_launch_job -c $config
+    colext_launch_job -c $config > colext_launch_job.output 2>&1
     echo "Job finished"
+    echo
 
     # colext_launch_job blocks until job is finished
     # Once the job is finished, pods will still be available to obtain the job_id
