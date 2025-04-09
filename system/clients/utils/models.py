@@ -96,13 +96,13 @@ def get_auxiliary_model(args):
             num_classes=args.num_classes,
             pretrained=args.pretrained,
         )
-    elif args.model == "ResNet4":
+    elif args.auxiliary_model == "ResNet4":
         model = resnet4(num_classes=args.num_classes)
-    elif args.model == "ResNet6":
+    elif args.auxiliary_model == "ResNet6":
         model = resnet6(num_classes=args.num_classes)
-    elif args.model == "ResNet8":
+    elif args.auxiliary_model == "ResNet8":
         model = resnet8(num_classes=args.num_classes)
-    elif args.model == "ResNet10":
+    elif args.auxiliary_model == "ResNet10":
         model = resnet10(num_classes=args.num_classes)
     else:
         raise NotImplementedError
