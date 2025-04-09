@@ -14,10 +14,14 @@ def make_plots(job_ids_file, benchmark_output, args):
     if not os.path.isdir(plots_dir):
         os.makedirs(plots_dir)
 
-    job_summaries_df, round_metrics_df, hw_metrics_df = prepare_data(job_ids_file, benchmark_output, args.force_collect)
+    job_summaries_df, round_metrics_df, _hw_metrics_df, _server_metrics_df = prepare_data(job_ids_file, benchmark_output, args.force_collect)
+    job_summaries_df = job_summaries_df[(job_summaries_df["round_number"] > 1) & (job_summaries_df["stage"] == "FIT")]
 
+    print("Creating plots")
+    # Plots total execution time and energy consumption
     plot_totals(round_metrics_df, job_summaries_df, plots_dir)
 
+    # Plots per sample data
     dev_order = ["JetsonAGXOrin", "JetsonOrinNano", "JetsonXavierNX", "JetsonNano", "JetsonXavierNX", "OrangePi5B"]
     header_cols = ["Training time ps (ms)", "Energy ps (mJ)"]
     cat_plot(job_summaries_df, plots_dir, "per_dev_ps", header_cols, x_col="dev_type", hue_col="job_id",
@@ -26,6 +30,7 @@ def make_plots(job_ids_file, benchmark_output, args):
                  }
             )
 
+    # Plots per sample data zoomed in on specific device - useful to pick configuration with similar train or energy
     header_cols = ["Training time ps (ms)", "Energy ps (mJ)"]
     cat_plot(job_summaries_df, plots_dir, "per_dev_ps_zoom_jon", header_cols, x_col="dev_type", hue_col="job_id",
                 y_limit_dev="JetsonOrinNano",
@@ -36,20 +41,38 @@ def make_plots(job_ids_file, benchmark_output, args):
                     }
                 )
 
+    # Minimal plot with key metrics
     header_cols = [
-        "Round time (s)", "Training time (s)", "Idle time (s)",
+        "Training time (s)", "Idle time (s)", "Energy training (J)", "Server time (s)",
+    ]
+    cat_plot(job_summaries_df, plots_dir, "per_job_round_minimal", header_cols, x_col="job_id", hue_col="dev_type")
+
+    # Minimal plot with key metrics per dev type
+    cat_plot(job_summaries_df, plots_dir, "per_job_per_dev_type_round_minimal", header_cols, x_col="dev_type", hue_col="job_id")
+
+    header_cols = [
+        "Training time (s)", "Idle time (s)", "num_examples", "Energy training (J)", "Server time (s)",
+    ]
+    # Minimal plot with key metrics per dev
+    cat_plot(job_summaries_df, plots_dir, "per_job_per_dev_round_minimal", header_cols, x_col="device_name", hue_col="job_id")
+
+    # Plot most metrics with job on the x axis and dev as hue
+    header_cols = [
+        "Round time (s)", "Training time (s)", "Idle time (s)", "Server time (s)",
         "Energy training (J)", "Energy in round (J)",
         "Data rcvd in round (MiB)", "Data sent in round (MiB)",
         "Avg CPU Util (%)", "Max CPU Util (%)",
         "Avg GPU Util (%)", "Max GPU Util (%)",
         "Avg Mem Util (MiB)", "Max Mem Util (MiB)",
     ]
-    cat_plot(job_summaries_df, plots_dir, "per_job_round", header_cols, x_col="job_id", hue_col="dev_type",
+    cat_plot(job_summaries_df, plots_dir, "per_job_round_full", header_cols, x_col="job_id", hue_col="dev_type",
                 # extra_plot_args = {
                 #     "errorbar": None,
                 #     "estimator": np.max
                 #     }
                 )
+
+    # Flip previous plot - Plot most metrics with dev on the x axis and job as hue
     cat_plot(job_summaries_df, plots_dir, "per_dev_round", header_cols, x_col="dev_type", hue_col="job_id")
 
 def prepare_data(job_ids_file, benchmark_output, force_collect=False):
@@ -58,15 +81,37 @@ def prepare_data(job_ids_file, benchmark_output, force_collect=False):
         job_id_map = dict(line.strip().split('=', 1) for line in f.readlines())
     job_ids = job_id_map.keys()
 
+    print("Preparing data")
     collect_job_metrics(job_ids, benchmark_output, force_collect)
     job_summaries_df = read_colext_metric_file_as_df("client_rounds_summary.csv", job_id_map, benchmark_output)
     round_metrics_df = read_colext_metric_file_as_df("round_metrics.csv", job_id_map, benchmark_output)
-    hw_metrics_df = read_colext_metric_file_as_df("hw_metrics_cleaned.csv", job_id_map, benchmark_output)
+    hw_metrics_df = read_colext_metric_file_as_df("hw_metrics_cleaned.csv", job_id_map, benchmark_output, date_columns=["time"])
+    server_metrics_df = read_colext_metric_file_as_df("server_round_metrics.csv", job_id_map, benchmark_output,
+                                                      date_columns=["eval_time_start", "eval_time_end", "configure_time_start", "configure_time_end", "aggregate_time_start", "aggregate_time_end"])
 
-    # Add idle column
-    job_summaries_df["Idle time (s)"] = job_summaries_df["Round time (s)"] - job_summaries_df["Training time (s)"]
 
-    return job_summaries_df, round_metrics_df, hw_metrics_df
+    # Add columns
+    server_metrics_df["Server time (s)"] = (
+        server_metrics_df["Eval time (s)"].fillna(0) +
+        server_metrics_df["Configure time (s)"] +
+        server_metrics_df["Aggregate time (s)"])
+
+    # Add Server time (s) to job_summaries_df
+    merge_cols = ["job_id", "round_number", "stage"]
+    job_summaries_df = job_summaries_df.merge(
+        server_metrics_df[ merge_cols + ["Server time (s)"] ],
+        on=merge_cols, how="left"
+    )
+
+    # Add Idle time (s) to job_summaries_df
+    # Helper to match server aggregated time start with client end time
+    merged_df = job_summaries_df.merge(
+        server_metrics_df[ merge_cols + ["aggregate_time_start"] ],
+        on=merge_cols, how="left"
+    )
+    job_summaries_df["Idle time (s)"] = (merged_df["aggregate_time_start"] - merged_df["end_time"]).dt.total_seconds()
+
+    return job_summaries_df, round_metrics_df, hw_metrics_df, server_metrics_df
 
 def collect_job_metrics(job_ids, output_parent_dir, force_collect=False):
     for job_id in job_ids:
@@ -84,7 +129,7 @@ def collect_job_metrics(job_ids, output_parent_dir, force_collect=False):
         if result.returncode != 0:
             print(f"ERROR: Could not collect job metrics for job_id = {job_id}")
 
-def read_colext_metric_file_as_df(metric_file, job_id_map, job_metrics_parent_dir):
+def read_colext_metric_file_as_df(metric_file, job_id_map, job_metrics_parent_dir, date_columns=["start_time", "end_time"]):
     print(f"Reading metrics from {metric_file} and merging as df")
     result_df = []
     for job_id, job_name in job_id_map.items():
@@ -96,9 +141,6 @@ def read_colext_metric_file_as_df(metric_file, job_id_map, job_metrics_parent_di
             metric_file
         )
 
-        date_columns = ["start_time", "end_time"]
-        if metric_file.startswith("hw_metrics"):
-            date_columns = ["time"]
         df = pd.read_csv(file_path, parse_dates=date_columns)
         df = df.assign(job_id=job_name)
         result_df.append(df)
@@ -108,26 +150,24 @@ def read_colext_metric_file_as_df(metric_file, job_id_map, job_metrics_parent_di
 def cat_plot(df, plots_dir, name_suffix, header_cols,
                  x_col="dev_type", hue_col="job_id", y_limit_dev=None, extra_plot_args={}):
     # Prepare dataset for plotting
-    id_vars=["dev_type", "job_id", "stage"]
+    id_vars=["dev_type", "device_name", "job_id", "stage"]
     cols = header_cols + id_vars
     df = df[cols]
+
     df_long = pd.melt(df, id_vars=id_vars, var_name='metric')
 
     g = sns.catplot(x=x_col, y="value", hue=hue_col, data=df_long,
-                    col="metric", row="stage",
-                    row_order=["FIT", "EVAL"],
+                    col="metric",
+                    row="stage",
                     kind="bar", sharey=False, height=3,
                     **extra_plot_args)
-                    # hue_order=sorted(df_long["job_id"].unique())
 
     g.set_axis_labels("", "")
     g.set_titles(col_template="{col_name}", row_template="{row_name}")
     g.figure.autofmt_xdate(rotation=70)
-    # for ax in g.axes.flat:
-    #     ax.tick_params(axis='x', labelrotation=70)
 
     # Set y axis limit as the max median value bench device * max_increase
-    if y_limit_dev:
+    if y_limit_dev and y_limit_dev in df["dev_type"].values:
         bench_dev_df = df[df["dev_type"] == y_limit_dev]
         max_increase = 1.7
         for ax in g.axes.flat:
