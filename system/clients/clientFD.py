@@ -71,7 +71,7 @@ class Client(ClientBase):
                     for i, label in enumerate(labels):
                         label = label.item()
                         proto_new[i, :] = protos[label].data
-                    loss += self.loss_mse(proto_new, outputs) * self.args.lamda
+                    loss += self.loss_mse(proto_new.softmax(dim=1), outputs) * self.args.lamda
 
                 optimizer.zero_grad()
                 loss.backward()
