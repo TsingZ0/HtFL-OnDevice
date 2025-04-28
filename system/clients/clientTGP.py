@@ -42,12 +42,12 @@ class Client(ClientBase):
         return uploads
 
     # receive
-    def set_parameters(self, protos):
-        proto_dict = zip(range(self.args.num_classes), protos)
-        protos = OrderedDict(
-            {key: torch.tensor(value).to(self.device) for key, value in proto_dict}
+    def set_parameters(self, global_protos):
+        global_protos_dict = zip(range(self.args.num_classes), global_protos)
+        global_protos = OrderedDict(
+            {key: torch.tensor(value).to(self.device) for key, value in global_protos_dict}
         )
-        save_item(protos, "protos", self.args.save_folder_path)
+        save_item(global_protos, "global_protos", self.args.save_folder_path)
 
     def train(self):
         """Train the network on the training set."""
@@ -59,7 +59,7 @@ class Client(ClientBase):
             lr=self.args.learning_rate,
             momentum=self.args.momentum
         )
-        protos = load_item("protos", self.args.save_folder_path)
+        global_protos = load_item("global_protos", self.args.save_folder_path)
         for _ in range(self.args.epochs):
             for images, labels in self.trainloader:
                 images, labels = images.to(self.device), labels.to(self.device)
@@ -67,11 +67,11 @@ class Client(ClientBase):
                 outputs = model.head(reps)
                 loss = criterion(outputs, labels)
 
-                if protos is not None:
+                if global_protos is not None:
                     proto_new = copy.deepcopy(reps.detach())
                     for i, label in enumerate(labels):
                         label = label.item()
-                        proto_new[i, :] = protos[label].data
+                        proto_new[i, :] = global_protos[label].data
                     loss += self.loss_mse(proto_new, reps) * self.args.lamda
 
                 optimizer.zero_grad()
@@ -85,7 +85,7 @@ class Client(ClientBase):
         model.eval()
         criterion = torch.nn.CrossEntropyLoss(reduce=False)
         correct, total, loss = 0, 0, 0.0
-        protos = load_item("protos", self.args.save_folder_path)
+        global_protos = load_item("global_protos", self.args.save_folder_path)
         with torch.no_grad():
             for data in self.testloader:
                 images, labels = data[0].to(self.device), data[1].to(self.device)
@@ -93,16 +93,13 @@ class Client(ClientBase):
                 outputs = model.head(reps)
                 loss += (criterion(outputs, labels)).sum().item()
                 total += labels.size(0)
-                if protos is not None:
+                if global_protos is not None:
                     dists = float('inf') * torch.ones(
                         labels.shape[0], self.args.num_classes).to(self.device)
                     for i, r in enumerate(reps):
-                        for j, pro in protos.items():
+                        for j, pro in global_protos.items():
                             dists[i, j] = self.loss_mse(r, pro)
                     _, predicted = torch.min(dists.data, 1)
-                    correct += (predicted == labels).sum().item()
-                else:
-                    _, predicted = torch.max(outputs.data, 1)
                     correct += (predicted == labels).sum().item()
         loss = loss / total
         accuracy = correct / total
@@ -136,7 +133,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_classes", type=int, default=10)
     parser.add_argument("--pretrained", type=bool, default=False)
     parser.add_argument("--server_address", type=str, default="127.0.0.1:8080")
-    parser.add_argument("--lamda", type=float, default=1.0)
+    parser.add_argument("--lamda", type=float, default=10.0)
     args = parser.parse_args()
     timestamp = str(time.time())
     log(INFO, f"Timestamp: {timestamp}")

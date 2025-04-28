@@ -44,7 +44,6 @@ class Client(ClientBase):
         if len(parameters) != params_len:
             log(WARNING, "Received parameters are only for initialization.")
         else:
-            model = load_item("model", self.args.save_folder_path)
             params_dict = zip(model.head.state_dict().keys(), parameters)
             state_dict = OrderedDict({key: torch.tensor(value) for key, value in params_dict})
             model.head.load_state_dict(state_dict, strict=True)
