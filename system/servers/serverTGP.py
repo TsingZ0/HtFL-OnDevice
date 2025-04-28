@@ -13,11 +13,12 @@ from torch.utils.data import DataLoader
 from .utils.misc import weighted_metrics_avg, save_item, load_item
 from colext import MonitorFlwrStrategy
 
+
 def proto_cluster(protos_list):
     proto_clusters = defaultdict(list)
     for protos in protos_list:
-        for k, proto in enumerate(protos):
-            proto_clusters[k].append(proto)
+        for k in protos.keys():
+            proto_clusters[k].append(protos[k])
 
     for k in proto_clusters.keys():
         protos = torch.stack(proto_clusters[k])
@@ -100,16 +101,15 @@ class FedTGP(fl.server.strategy.FedAvg):
             return None, {}
 
         # Convert results
-        uploaded_protos_per_client = [
-            [torch.tensor(proto) 
-             for proto in parameters_to_ndarrays(fit_res.parameters)
-             if len(proto.shape) > 0]
-            for _, fit_res in results
-        ]
         uploaded_protos = []
-        for protos in uploaded_protos_per_client:
-            for label, proto in enumerate(protos):
-                uploaded_protos.append((proto, label))
+        uploaded_protos_per_client = []
+        for _, fit_res in results:
+            client_protos = {}
+            for label, proto in enumerate(parameters_to_ndarrays(fit_res.parameters)):
+                if len(proto.shape) > 0:
+                    client_protos[label] = torch.tensor(proto)
+                    uploaded_protos.append((torch.tensor(proto), label))
+            uploaded_protos_per_client.append(client_protos)
 
         # Calculate class-wise minimum distance
         gap = torch.ones(self.args.num_classes, device=self.device) * 1e9

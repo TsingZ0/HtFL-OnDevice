@@ -66,16 +66,13 @@ class FedGH(fl.server.strategy.FedAvg):
             return None, {}
 
         # Convert results
-        uploaded_protos_per_client = [
-            [torch.tensor(proto) 
-             for proto in parameters_to_ndarrays(fit_res.parameters)
-             if len(proto.shape) > 0]
-            for _, fit_res in results
-        ]
         uploaded_protos = []
-        for protos in uploaded_protos_per_client:
-            for label, proto in enumerate(protos):
-                uploaded_protos.append((proto, label))
+        for _, fit_res in results:
+            client_protos = {}
+            for label, proto in enumerate(parameters_to_ndarrays(fit_res.parameters)):
+                if len(proto.shape) > 0:
+                    client_protos[label] = torch.tensor(proto)
+                    uploaded_protos.append((torch.tensor(proto), label))
 
         # Update Head
         self.update_Head(uploaded_protos)

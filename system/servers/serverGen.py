@@ -54,7 +54,7 @@ class Generator(nn.Module):
         return z
 
 @MonitorFlwrStrategy
-class FedGH(fl.server.strategy.FedAvg):
+class FedGen(fl.server.strategy.FedAvg):
     def __init__(self,
             fraction_fit,
             fraction_evaluate,
@@ -185,7 +185,7 @@ if __name__ == "__main__":
     # Start server
     fl.server.start_server(
         config=fl.server.ServerConfig(num_rounds=args.num_rounds),
-        strategy=FedGH(
+        strategy=FedGen(
             fraction_fit=args.fraction_fit,
             fraction_evaluate=1.0,
             min_fit_clients=args.min_fit_clients,
