@@ -1,7 +1,6 @@
 import argparse
 import os
 import time
-from colext import MonitorFlwrStrategy
 import flwr as fl
 import torch
 import torch.nn as nn
@@ -10,6 +9,8 @@ from flwr.common.logger import log
 from logging import WARNING, INFO
 from flwr.common import parameters_to_ndarrays, ndarrays_to_parameters
 from torch.utils.data import DataLoader
+from colext import MonitorFlwrStrategy
+
 from .utils.misc import weighted_metrics_avg, save_item, load_item
 
 
@@ -133,10 +134,12 @@ if __name__ == "__main__":
     log(INFO, f"Timestamp: {timestamp}")
     args.save_folder_path = os.path.join(args.save_folder_path, timestamp)
 
+    MonitoredStrategy = MonitorFlwrStrategy(FedGH)
+
     # Start server
     fl.server.start_server(
         config=fl.server.ServerConfig(num_rounds=args.num_rounds),
-        strategy=FedGH(
+        strategy=MonitoredStrategy(
             fraction_fit=args.fraction_fit,
             fraction_evaluate=1.0,
             min_fit_clients=args.min_fit_clients,

@@ -6,8 +6,8 @@ import flwr as fl
 from torch.utils.data import DataLoader
 from flwr.common.logger import log
 from logging import WARNING, INFO
-from system.utils import data_utils
 
+from .utils.data_utils import read_client_local_data, has_local_device_data
 from .utils.models import save_item, load_item
 
 warnings.simplefilter("ignore")
@@ -53,10 +53,10 @@ class ClientBase(fl.client.NumPyClient):
     def load_data(self):
         """Load training and test set."""
 
-        if data_utils.has_local_device_data():
+        if has_local_device_data():
             log(INFO, "Found device local data")
-            trainset = data_utils.read_client_local_data(train=True)
-            testset  = data_utils.read_client_local_data(train=False)
+            trainset = read_client_local_data(train=True)
+            testset  = read_client_local_data(train=False)
         # otherwise default to CIFAR10
         else:
             transform = transforms.Compose(
@@ -67,9 +67,11 @@ class ClientBase(fl.client.NumPyClient):
             )
             trainset = torchvision.datasets.CIFAR10(
                 "test_data", train=True, download=True, transform=transform)
+            trainset.data = trainset.data[:1000]
+            trainset.targets = trainset.targets[:1000]
             testset = torchvision.datasets.CIFAR10("test_data", train=False, download=True, transform=transform)
 
-        self.trainloader = DataLoader(trainset, batch_size=self.args.batch_size, shuffle=True)
+        self.trainloader = DataLoader(trainset, batch_size=self.args.batch_size, shuffle=True, drop_last=True)
         self.testloader = DataLoader(testset, batch_size=self.args.batch_size)
         self.num_examples = {"trainset" : len(trainset), "testset" : len(testset)}
 

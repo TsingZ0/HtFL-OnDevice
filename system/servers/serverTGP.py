@@ -10,8 +10,9 @@ from logging import WARNING, INFO
 from flwr.common import parameters_to_ndarrays, ndarrays_to_parameters
 from collections import defaultdict
 from torch.utils.data import DataLoader
-from .utils.misc import weighted_metrics_avg, save_item, load_item
 from colext import MonitorFlwrStrategy
+
+from .utils.misc import weighted_metrics_avg, save_item, load_item
 
 
 def proto_cluster(protos_list):
@@ -204,10 +205,12 @@ if __name__ == "__main__":
     log(INFO, f"Timestamp: {timestamp}")
     args.save_folder_path = os.path.join(args.save_folder_path, timestamp)
 
+    MonitoredStrategy = MonitorFlwrStrategy(FedTGP)
+
     # Start server
     fl.server.start_server(
         config=fl.server.ServerConfig(num_rounds=args.num_rounds),
-        strategy=FedTGP(
+        strategy=MonitoredStrategy(
             fraction_fit=args.fraction_fit,
             fraction_evaluate=1.0,
             min_fit_clients=args.min_fit_clients,
