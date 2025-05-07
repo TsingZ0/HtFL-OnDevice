@@ -14,9 +14,12 @@ def read_data(file_path):
 
 def read_client_local_data(train=True):
     # Read local data relative to the current working directory - should be root of project
-    data_dir = DEVICE_DATA_DIR
+    client_id = os.environ.get('COLEXT_CLIENT_ID')
+    if not client_id:
+        raise ValueError("COLEXT_CLIENT_ID env variable is not defined. \
+                         Are you using a CoLExT env?")
     data_type = 'train' if train else 'test'
-    file_path = os.path.join(data_dir, f"{data_type}.npz")
+    file_path = os.path.join(DEVICE_DATA_DIR, f"{data_type}_{client_id}.npz")
 
     data = read_data(file_path)
     return data
