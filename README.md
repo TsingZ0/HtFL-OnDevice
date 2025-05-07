@@ -40,7 +40,7 @@ The HtFL frameworks with ~~strikethrough~~ indicate the ones that are not yet im
 Deploying experiments on CoLExT requires the specification of a CoLExT config file. An example is shown below. Additional examples will be placed inside `colext_experiments/`.
 
 Important notes:
-1. Before running the client Python code, client devices assign their own data based on the client ID provided by CoLExT, using the `./config_device_data.sh` script.
+1. Before running the client Python code, client devices self-assign their own data using the `./config_device_data.sh` script. The script assigns data partitions based on the client ID provided by CoLExT. For example, the "identify" strategy assigns partition x to client x.
 2. It's possible to specify additional arguments to a particular client group, allowing different client groups to receive different arguments.
 
 Example config:
@@ -55,7 +55,7 @@ code:
   path: "../"
   client:
     command: >-
-      ./config_device_data.sh ${COLEXT_DATASETS}/iWildCam ${COLEXT_CLIENT_ID} &&
+      ./config_device_data.sh ${COLEXT_DATASETS}/iWildCam identity &&
       python3 -m system.clients.clientLG
       --server_address=${COLEXT_SERVER_ADDRESS}
       --num_classes=158
@@ -68,13 +68,9 @@ code:
 
 clients:
   - dev_type: JetsonAGXOrin
-    count: 1
+    count: 2
     # Add additional arguments this client group
     add_args: "--model=ResNet101"
-
-  - dev_type: JetsonOrinNano
-    count: 2
-    add_args: "--model=ResNet50"
 
   - dev_type: OrangePi5B
     count: 2
@@ -85,35 +81,45 @@ clients:
     add_args: "--model=ResNet34"
 ```
 
-To launch the experiment:
-```bash
-colext_launch_job -c colext_experiments/example_config.yaml
-```
-
 For an up-to-date reference on the CoLExT config file, refer to CoLExT's [README](https://github.com/sands-lab/colext/blob/main/README.md).
 
+Interacting with CoLExT:
+```bash
+# Launch an experiment
+colext_launch_job -c colext_experiments/example_config.yaml
+# Collect metrics
+colext_get_metrics -j <job_id>
+```
+
+To debug an experiment, the CoLExT config can be run locally on the CoLExT server using CoLExT's local Python deployer.
+```bash
+colext_launch_job -c colext_experiments/example_config.yaml --deployer=local_py
+# Experiment logs are collected on the current working directory
+```
 
 ## CoLExT Benchmarks
 
-Easy to run benchmarks are available in `colext_experiments/benchmarks`.
-The following benchmarks are available:
-
+Easy to run benchmarks are available in `colext_experiments/benchmarks`:
 - `resnet_models/`: benchmark several resnet models across all devices types
-- `devs_w_same_energy_efficiency/`: benchmark all HtFL frameworks using a model per device that ensures a similar energy budget for each device. The energy threshold was selected to be the median energy spent in a round for the the fastest device based on the the `resnet_models` benchmark.
+- `devs_w_same_energy_efficiency/`: benchmark all HtFL frameworks using a model per device that ensures a similar energy budget for each device. The energy threshold was selected to be the median energy spent in a round by the fastest device based on the the `resnet_models` benchmark.
 
 ### How to run a benchmark:
 ```bash
 $ cd colexT_experiments/benchmark
 $ ./run_benchmark.sh <path_to_benchmark_folder>
+# Calls <benchmark_folder>/gen_configs.py to generate CoLExT configs
+#   Outputs configs to `<benchmark_folder>/output/colext_configs`
+# Launches jobs based on each config and records the job id
+#   Writes job ids to `<benchmark_folder>/output/output_job_id_maps.txt`
+
 # After benchmark is finished, plot the results
-# Results are available inside <path_to_benchmark_folder>/output/plots
 $ python3 plot_benchmark.py <path_to_benchmark_folder>
+# Creates plots based on the job ids from `<benchmark_folder>/output/output_job_id_maps.txt`
+#   Plots are written to `<benchmark_folder>/output/plots`
 ```
 
 ### Adding or modifying benchmarks
-Benchmarks consist of running multiple `colext_config.yaml` files. To avoid manually generating these files, each benchmark folder contains a `gen_configs.py` script that will take care of generating all the necessary configurations and output them to `<benchmark_folder>/output/colext_configs`. This script should contain all the logic required to create the needed configuration files for the benchmark. See the existing benchmark folders for examples.
+Benchmarks consist of running multiple `colext_config.yaml` files. To avoid manually generating these files, each benchmark folder contains a `gen_configs.py` script. This script generates all the necessary configuration files and outputs them to `<benchmark_folder>/output/colext_configs`. This script should contain all the logic required to create the configuration files for the benchmark. Refer to existing benchmark folders for examples.
 
-With the script in place, running `run_benchmark.sh <benchmark_folder>` will:
-1. Invoke the `gen_configs.py` within the benchmark folder to generate the CoLExT configuration files
-2. Deploy an experiment on CoLExT for each configuration, recording the corresponding job ID for the experiment
-3. Store the job IDs for later use in data collection and plotting
+The `gen_configs.py` file is all that's needed to create a benchmark.
+With the file in place we can run the benchmark according to [How to run a benchmark](how-to-run-a-benchmark).
