@@ -103,12 +103,10 @@ if __name__ == "__main__":
     log(INFO, f"Timestamp: {timestamp}")
     args.save_folder_path = os.path.join(args.save_folder_path, timestamp)
 
-    MonitoredStrategy = MonitorFlwrStrategy(FedProto)
-
     # Start server
     fl.server.start_server(
         config=fl.server.ServerConfig(num_rounds=args.num_rounds),
-        strategy=MonitoredStrategy(
+        strategy=FedProto(
             fraction_fit=args.fraction_fit,
             fraction_evaluate=1.0,
             min_fit_clients=args.min_fit_clients,

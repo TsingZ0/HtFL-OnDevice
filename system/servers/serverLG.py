@@ -8,6 +8,9 @@ from colext import MonitorFlwrStrategy
 
 from .utils.misc import weighted_metrics_avg
 
+@MonitorFlwrStrategy
+class LG(fl.server.strategy.FedAvg):
+    pass
 
 if __name__ == "__main__":
     # Configration of the server
@@ -22,12 +25,10 @@ if __name__ == "__main__":
     log(INFO, f"Timestamp: {timestamp}")
     args.save_folder_path = os.path.join(args.save_folder_path, timestamp)
 
-    MonitoredStrategy = MonitorFlwrStrategy(fl.server.strategy.FedAvg)
-
     # Start server
     fl.server.start_server(
         config=fl.server.ServerConfig(num_rounds=args.num_rounds),
-        strategy=MonitoredStrategy(
+        strategy=LG(
             fraction_fit=args.fraction_fit,
             fraction_evaluate=1.0,
             min_fit_clients=args.min_fit_clients,

@@ -24,7 +24,7 @@ def proto_cluster(protos_list):
 
     return proto_clusters
 
-@MonitorFlwrStrategy
+# @MonitorFlwrStrategy
 class FD(fl.server.strategy.FedAvg):
     def __init__(self,
             fraction_fit,
@@ -89,7 +89,7 @@ class FD(fl.server.strategy.FedAvg):
             log(WARNING, "No fit_metrics_aggregation_fn provided")
 
         return parameters_aggregated, metrics_aggregated
-    
+
 
 if __name__ == "__main__":
     # Configration of the server
@@ -104,12 +104,10 @@ if __name__ == "__main__":
     log(INFO, f"Timestamp: {timestamp}")
     args.save_folder_path = os.path.join(args.save_folder_path, timestamp)
 
-    MonitoredStrategy = MonitorFlwrStrategy(FD)
-
     # Start server
     fl.server.start_server(
         config=fl.server.ServerConfig(num_rounds=args.num_rounds),
-        strategy=MonitoredStrategy(
+        strategy=FD(
             fraction_fit=args.fraction_fit,
             fraction_evaluate=1.0,
             min_fit_clients=args.min_fit_clients,
