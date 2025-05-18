@@ -30,10 +30,11 @@ The HtFL frameworks with ~~strikethrough~~ indicate the ones that are not yet im
 ## How to Use
 
 1. Distribute and store realistic datasets (`.npz` files) on all devices using a designated strategy (*to be determined*). Please read the `config.json` file for the details of each dataset. Each `.npz` file can be directly used by PyTorch's DataLoader.
-2. For each HtFL frameworks, deploy the `./system/servers/serverNAME.py` and `./system/clients/clientNAME.py` (with `./system/utils`) to the workstation and devices, respectively. The server and client models will be saved to their `checkpoints` folders, respectively.
-3. Execute the server file with the appropriate configurations (`argparse`), which varies by HtFL framework.
-4. Execute the client file with the appropriate configurations (`argparse`), which varies by HtFL framework. Real data loading not implemented yet.
-5. Checkpoints are stored locally on clients in `args.save_folder_path`, with timestamps used by default.
+2. Run `./remap_labels.py` to re-map the labels into consecutive integers, and get the total number of labels to set `--num_classes`.
+3. For each HtFL frameworks, deploy the `./system/servers/serverNAME.py` and `./system/clients/clientNAME.py` (with `./system/utils`) to the workstation and devices, respectively. The server and client models will be saved to their `checkpoints` folders, respectively.
+4. Execute the server file with the appropriate configurations (`argparse`), which varies by HtFL framework.
+5. Execute the client file with the appropriate configurations (`argparse`), which varies by HtFL framework. Real data loading not implemented yet.
+6. Checkpoints are stored locally on clients in `args.save_folder_path`, with timestamps used by default.
 
 ## CoLExT Experiment Deployment
 
