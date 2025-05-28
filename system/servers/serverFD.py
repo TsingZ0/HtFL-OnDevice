@@ -24,7 +24,7 @@ def proto_cluster(protos_list):
 
     return proto_clusters
 
-# @MonitorFlwrStrategy
+@MonitorFlwrStrategy
 class FD(fl.server.strategy.FedAvg):
     def __init__(self,
             fraction_fit,
@@ -77,6 +77,8 @@ class FD(fl.server.strategy.FedAvg):
 
         global_protos_ndarrays = [0 for _ in range(len(global_protos))]
         for label, proto in global_protos.items():
+            print(f"global_protos_ndarrays size= {len(global_protos_ndarrays)}", flush=True)
+            print(f"label= {label}", flush=True)
             global_protos_ndarrays[label] = proto.cpu().numpy()
         parameters_aggregated = ndarrays_to_parameters(global_protos_ndarrays)
 
