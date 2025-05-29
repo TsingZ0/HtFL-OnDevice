@@ -20,6 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("--fraction_fit", type=float, default=1.0)
     parser.add_argument("--min_fit_clients", type=int, default=2)
     parser.add_argument("--min_available_clients", type=int, default=2)
+    parser.add_argument("--num_classes", type=int, default=10)
     args = parser.parse_args()
     timestamp = str(time.time())
     log(INFO, f"Timestamp: {timestamp}")
