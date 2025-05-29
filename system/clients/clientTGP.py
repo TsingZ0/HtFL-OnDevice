@@ -36,17 +36,24 @@ class Client(ClientBase):
     def get_parameters(self, config):
         self.collect_protos()
         protos = load_item("protos", self.args.save_folder_path)
-        uploads = [0 for _ in range(self.args.num_classes)]
+        protos_upload = [0 for _ in range(self.args.num_classes)]
         for key, value in protos.items():
-            uploads[key] = value.cpu().numpy()
-        return uploads
+            protos_upload[key] = value.cpu().numpy()
+        return protos_upload
 
     # receive
     def set_parameters(self, global_protos):
         global_protos_dict = zip(range(self.args.num_classes), global_protos)
         global_protos = OrderedDict(
-            {key: torch.tensor(value).to(self.device) for key, value in global_protos_dict}
+            {key: torch.tensor(proto).to(self.device) 
+             for key, proto in global_protos_dict
+             if len(proto.shape) > 0}
         )
+        for images, labels in self.trainloader:
+            for i, label in enumerate(labels):
+                label = label.item()
+                if label not in global_protos.keys():
+                    return
         save_item(global_protos, "global_protos", self.args.save_folder_path)
 
     def train(self):

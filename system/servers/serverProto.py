@@ -37,6 +37,7 @@ class FedProto(fl.server.strategy.FedAvg):
             on_fit_config_fn,
             on_evaluate_config_fn,
             inplace,
+            args,
         ):
         super().__init__(
             fraction_fit=fraction_fit,
@@ -50,6 +51,7 @@ class FedProto(fl.server.strategy.FedAvg):
             on_evaluate_config_fn=on_evaluate_config_fn,
             inplace=inplace,
         )
+        self.args = args
 
     def aggregate_fit(
         self,
@@ -75,8 +77,10 @@ class FedProto(fl.server.strategy.FedAvg):
 
         global_protos = proto_cluster(uploaded_protos_per_client)
 
-        global_protos_ndarrays = [0 for _ in range(len(global_protos))]
+        global_protos_ndarrays = [0 for _ in range(self.args.num_classes)]
         for label, proto in global_protos.items():
+            print(f"global_protos_ndarrays size= {len(global_protos_ndarrays)}", flush=True)
+            print(f"label= {label}", flush=True)
             global_protos_ndarrays[label] = proto.cpu().numpy()
         parameters_aggregated = ndarrays_to_parameters(global_protos_ndarrays)
 
@@ -90,6 +94,7 @@ class FedProto(fl.server.strategy.FedAvg):
 
         return parameters_aggregated, metrics_aggregated
 
+
 if __name__ == "__main__":
     # Configration of the server
     parser = argparse.ArgumentParser()
@@ -98,6 +103,7 @@ if __name__ == "__main__":
     parser.add_argument("--fraction_fit", type=float, default=1.0)
     parser.add_argument("--min_fit_clients", type=int, default=2)
     parser.add_argument("--min_available_clients", type=int, default=2)
+    parser.add_argument("--num_classes", type=int, default=57)
     args = parser.parse_args()
     timestamp = str(time.time())
     log(INFO, f"Timestamp: {timestamp}")
@@ -117,6 +123,7 @@ if __name__ == "__main__":
             on_fit_config_fn=None,
             on_evaluate_config_fn=None,
             inplace=False,
+            args=args,
         ),
     )
 

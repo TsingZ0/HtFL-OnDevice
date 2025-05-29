@@ -36,18 +36,25 @@ class Client(ClientBase):
     def get_parameters(self, config):
         self.collect_protos()
         protos = load_item("protos", self.args.save_folder_path)
-        uploads = [0 for _ in range(self.args.num_classes)]
+        protos_upload = [0 for _ in range(self.args.num_classes)]
         for key, value in protos.items():
-            uploads[key] = value.cpu().numpy()
-        return uploads
+            protos_upload[key] = value.cpu().numpy()
+        return protos_upload
 
     # receive
-    def set_parameters(self, protos):
-        proto_dict = zip(range(self.args.num_classes), protos)
-        protos = OrderedDict(
-            {key: torch.tensor(value).to(self.device) for key, value in proto_dict}
+    def set_parameters(self, global_protos):
+        global_protos_dict = zip(range(self.args.num_classes), global_protos)
+        global_protos = OrderedDict(
+            {key: torch.tensor(proto).to(self.device) 
+             for key, proto in global_protos_dict
+             if len(proto.shape) > 0}
         )
-        save_item(protos, "protos", self.args.save_folder_path)
+        for images, labels in self.trainloader:
+            for i, label in enumerate(labels):
+                label = label.item()
+                if label not in global_protos.keys():
+                    return
+        save_item(global_protos, "global_protos", self.args.save_folder_path)
 
     def train(self):
         """Train the network on the training set."""
@@ -59,18 +66,18 @@ class Client(ClientBase):
             lr=self.args.learning_rate,
             momentum=self.args.momentum
         )
-        protos = load_item("protos", self.args.save_folder_path)
+        global_protos = load_item("global_protos", self.args.save_folder_path)
         for _ in range(self.args.epochs):
             for images, labels in self.trainloader:
                 images, labels = images.to(self.device), labels.to(self.device)
                 outputs = model(images)
                 loss = criterion(outputs, labels)
 
-                if protos is not None:
+                if global_protos is not None:
                     proto_new = copy.deepcopy(outputs.detach())
                     for i, label in enumerate(labels):
                         label = label.item()
-                        proto_new[i, :] = protos[label].data
+                        proto_new[i, :] = global_protos[label].data
                     loss += self.loss_mse(proto_new.softmax(dim=1), outputs) * self.args.lamda
 
                 optimizer.zero_grad()
