@@ -7,7 +7,7 @@ code:
   path: "../"
   client:
     command: >-
-      ./config_device_data.sh ${COLEXT_DATASETS}/iWildCam ${COLEXT_CLIENT_ID} &&
+      ./config_device_data.sh ${COLEXT_DATASETS}/iWildCam identity &&
       python3 -m system.clients.clientFD
       --server_address=${COLEXT_SERVER_ADDRESS}
       --num_classes=158
