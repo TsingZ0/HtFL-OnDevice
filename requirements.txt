@@ -4,4 +4,4 @@ torchaudio==2.0.1
 torchtext==0.15.1
 torchvision==0.15.1
 flwr==1.8.0
-colext @ git+https://git@github.com/sands-lab/colext.git
+colext[plotting] @ git+https://git@github.com/sands-lab/colext.git
