@@ -28,12 +28,14 @@ for file_id in file_ids:
     for label in train_data['y']:
         new_labels.append(remap[label])
     train_data['y'] = new_labels
-    with open(train_file_path, 'wb') as f:
+    train_file_path_new = data_dir + "_trim" + "/train/" + file_id + ".npz"
+    with open(train_file_path_new, 'wb') as f:
         np.savez_compressed(f, data=train_data)
         
     new_labels = []
     for label in test_data['y']:
         new_labels.append(remap[label])
     test_data['y'] = new_labels
-    with open(test_file_path, 'wb') as f:
+    test_file_path_new = data_dir + "_trim" + "/test/" + file_id + ".npz"
+    with open(test_file_path_new, 'wb') as f:
         np.savez_compressed(f, data=test_data)
