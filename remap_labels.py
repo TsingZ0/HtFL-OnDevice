@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 data_dir = input("Input data folder:")
@@ -28,7 +29,9 @@ for file_id in file_ids:
     for label in train_data['y']:
         new_labels.append(remap[label])
     train_data['y'] = new_labels
-    train_file_path_new = data_dir + "_trim" + "/train/" + file_id + ".npz"
+    data_dir_new = data_dir + "_trim" + "/train/"
+    os.makedirs(data_dir_new, exist_ok=True)
+    train_file_path_new = data_dir_new + file_id + ".npz"
     with open(train_file_path_new, 'wb') as f:
         np.savez_compressed(f, data=train_data)
         
@@ -36,6 +39,8 @@ for file_id in file_ids:
     for label in test_data['y']:
         new_labels.append(remap[label])
     test_data['y'] = new_labels
-    test_file_path_new = data_dir + "_trim" + "/test/" + file_id + ".npz"
+    data_dir_new = data_dir + "_trim" + "/test/"
+    os.makedirs(data_dir_new, exist_ok=True)
+    test_file_path_new = data_dir_new + file_id + ".npz"
     with open(test_file_path_new, 'wb') as f:
         np.savez_compressed(f, data=test_data)
