@@ -1,4 +1,5 @@
 import argparse
+import copy
 import os
 import time
 import torch
@@ -52,6 +53,7 @@ class FD(fl.server.strategy.FedAvg):
             inplace=inplace,
         )
         self.args = args
+        self.global_protos = defaultdict(list)
 
     def aggregate_fit(
         self,
@@ -76,11 +78,10 @@ class FD(fl.server.strategy.FedAvg):
             uploaded_protos_per_client.append(client_protos)
 
         global_protos = proto_cluster(uploaded_protos_per_client)
+        self.proto_merge(global_protos)
 
         global_protos_ndarrays = [0 for _ in range(self.args.num_classes)]
-        for label, proto in global_protos.items():
-            print(f"global_protos_ndarrays size= {len(global_protos_ndarrays)}", flush=True)
-            print(f"label= {label}", flush=True)
+        for label, proto in self.global_protos.items():
             global_protos_ndarrays[label] = proto.cpu().numpy()
         parameters_aggregated = ndarrays_to_parameters(global_protos_ndarrays)
 
@@ -93,6 +94,14 @@ class FD(fl.server.strategy.FedAvg):
             log(WARNING, "No fit_metrics_aggregation_fn provided")
 
         return parameters_aggregated, metrics_aggregated
+    
+
+    def proto_merge(self, protos_new):
+        for k, proto in protos_new.items():
+            if k in self.global_protos.keys():
+                self.global_protos[k] = self.global_protos[k] * (1-self.args.alpha) + proto * self.args.alpha
+            else:
+                self.global_protos[k] = copy.deepcopy(proto)
 
 
 if __name__ == "__main__":
@@ -104,6 +113,7 @@ if __name__ == "__main__":
     parser.add_argument("--min_fit_clients", type=int, default=2)
     parser.add_argument("--min_available_clients", type=int, default=2)
     parser.add_argument("--num_classes", type=int, default=10)
+    parser.add_argument("--alpha", type=float, default=0.5)
     args = parser.parse_args()
     timestamp = str(time.time())
     log(INFO, f"Timestamp: {timestamp}")

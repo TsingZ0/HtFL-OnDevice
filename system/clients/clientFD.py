@@ -82,6 +82,7 @@ class Client(ClientBase):
 
                 optimizer.zero_grad()
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
                 optimizer.step()
         save_item(model, "model", self.args.save_folder_path)
 
@@ -89,13 +90,13 @@ class Client(ClientBase):
         model = load_item("model", self.args.save_folder_path)
         model.eval()
         protos = defaultdict(list)
-        for _ in range(self.args.epochs):
+        with torch.no_grad():
             for images, labels in self.trainloader:
                 images, labels = images.to(self.device), labels.to(self.device)
-                outputs = model(images)
+                reps = model.base(images)
                 for i, label in enumerate(labels):
-                    label = label.item()
-                    protos[label].append(outputs[i, :].detach().data)
+                    ll = label.item()
+                    protos[ll].append(reps[i, :].detach().data)
         protos = agg_func(protos)
         save_item(protos, "protos", self.args.save_folder_path)
 
@@ -104,6 +105,7 @@ if __name__ == "__main__":
     # Configuration of the client
     parser = argparse.ArgumentParser()
     parser.add_argument("--save_folder_path", type=str, default="checkpoints")
+    parser.add_argument("--data_name", type=str, default="iWildCam")
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=0.01)
