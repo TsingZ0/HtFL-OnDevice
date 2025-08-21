@@ -93,7 +93,7 @@ class Client(ClientBase):
         with torch.no_grad():
             for images, labels in self.trainloader:
                 images, labels = images.to(self.device), labels.to(self.device)
-                reps = model(images)
+                reps = model.base(images)
                 for i, label in enumerate(labels):
                     ll = label.item()
                     protos[ll].append(reps[i, :].detach().data)
