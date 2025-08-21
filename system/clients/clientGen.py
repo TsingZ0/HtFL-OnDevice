@@ -108,7 +108,6 @@ class Client(ClientBase):
 
                 optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
                 optimizer.step()
         save_item(model, "model", self.args.save_folder_path)
 
@@ -117,7 +116,6 @@ if __name__ == "__main__":
     # Configuration of the client
     parser = argparse.ArgumentParser()
     parser.add_argument("--save_folder_path", type=str, default="checkpoints")
-    parser.add_argument("--data_name", type=str, default="iWildCam")
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=0.01)

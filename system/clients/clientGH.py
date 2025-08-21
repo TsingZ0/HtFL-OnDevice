@@ -42,7 +42,7 @@ class Client(ClientBase):
         model = load_item("model", self.args.save_folder_path)
         params_len = len(model.head.state_dict().keys())
         if len(parameters) != params_len:
-            log(INFO, "Received parameters are only for initialization.")
+            log(WARNING, "Received parameters are only for initialization.")
         else:
             params_dict = zip(model.head.state_dict().keys(), parameters)
             state_dict = OrderedDict({key: torch.tensor(value) for key, value in params_dict})
@@ -53,13 +53,13 @@ class Client(ClientBase):
         model = load_item("model", self.args.save_folder_path)
         model.eval()
         protos = defaultdict(list)
-        with torch.no_grad():
+        for _ in range(self.args.epochs):
             for images, labels in self.trainloader:
                 images, labels = images.to(self.device), labels.to(self.device)
                 reps = model.base(images)
                 for i, label in enumerate(labels):
-                    ll = label.item()
-                    protos[ll].append(reps[i, :].detach().data)
+                    label = label.item()
+                    protos[label].append(reps[i, :].detach().data)
         protos = agg_func(protos)
         save_item(protos, "protos", self.args.save_folder_path)
 
@@ -68,7 +68,6 @@ if __name__ == "__main__":
     # Configuration of the client
     parser = argparse.ArgumentParser()
     parser.add_argument("--save_folder_path", type=str, default="checkpoints")
-    parser.add_argument("--data_name", type=str, default="iWildCam")
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=0.01)

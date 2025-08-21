@@ -49,11 +49,9 @@ class Client(ClientBase):
              for key, proto in global_protos_dict
              if len(proto.shape) > 0}
         )
-        my_labels = set()
         for images, labels in self.trainloader:
             for i, label in enumerate(labels):
                 label = label.item()
-                my_labels.add(label)
                 if label not in global_protos.keys():
                     return
         save_item(global_protos, "global_protos", self.args.save_folder_path)
@@ -85,7 +83,6 @@ class Client(ClientBase):
 
                 optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
                 optimizer.step()
         save_item(model, "model", self.args.save_folder_path)
 
@@ -119,13 +116,13 @@ class Client(ClientBase):
         model = load_item("model", self.args.save_folder_path)
         model.eval()
         protos = defaultdict(list)
-        with torch.no_grad():
+        for _ in range(self.args.epochs):
             for images, labels in self.trainloader:
                 images, labels = images.to(self.device), labels.to(self.device)
                 reps = model.base(images)
                 for i, label in enumerate(labels):
-                    ll = label.item()
-                    protos[ll].append(reps[i, :].detach().data)
+                    label = label.item()
+                    protos[label].append(reps[i, :].detach().data)
         protos = agg_func(protos)
         save_item(protos, "protos", self.args.save_folder_path)
 
@@ -134,7 +131,6 @@ if __name__ == "__main__":
     # Configuration of the client
     parser = argparse.ArgumentParser()
     parser.add_argument("--save_folder_path", type=str, default="checkpoints")
-    parser.add_argument("--data_name", type=str, default="iWildCam")
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=0.01)
@@ -144,7 +140,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_classes", type=int, default=10)
     parser.add_argument("--pretrained", type=bool, default=False)
     parser.add_argument("--server_address", type=str, default="127.0.0.1:8080")
-    parser.add_argument("--lamda", type=float, default=1.0)
+    parser.add_argument("--lamda", type=float, default=10.0)
     args = parser.parse_args()
     timestamp = str(time.time())
     log(INFO, f"Timestamp: {timestamp}")

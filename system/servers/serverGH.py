@@ -111,7 +111,6 @@ class FedGH(fl.server.strategy.FedAvg):
                 loss = criterion(out, y)
                 Head_opt.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(Head.parameters(), 10)
                 Head_opt.step()
         save_item(Head, 'Head', self.args.save_folder_path)
 
@@ -128,7 +127,7 @@ if __name__ == "__main__":
     parser.add_argument("--learning_rate", type=float, default=0.01)
     parser.add_argument("--feature_dim", type=int, default=512)
     parser.add_argument("--num_classes", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--client_model", type=str, default="ResNet")
     args = parser.parse_args()
     timestamp = str(time.time())

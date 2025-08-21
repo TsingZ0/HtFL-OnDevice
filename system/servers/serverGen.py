@@ -158,7 +158,6 @@ class FedGen(fl.server.strategy.FedAvg):
             generative_model_opt.zero_grad()
             loss = criterion(logits, labels)
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(generative_model.parameters(), 10)
             generative_model_opt.step()
         save_item(generative_model, 'generative_model', self.args.save_folder_path)
 
@@ -177,7 +176,7 @@ if __name__ == "__main__":
     parser.add_argument("--noise_dim", type=int, default=32)
     parser.add_argument("--hidden_dim", type=int, default=512)
     parser.add_argument("--num_classes", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--client_model", type=str, default="ResNet")
     args = parser.parse_args()
     timestamp = str(time.time())

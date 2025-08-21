@@ -177,7 +177,6 @@ class FedTGP(fl.server.strategy.FedAvg):
 
                 TGP_opt.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(TGP.parameters(), 10)
                 TGP_opt.step()
 
         TGP.eval()
@@ -200,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument("--feature_dim", type=int, default=512)
     parser.add_argument("--margin_threthold", type=float, default=100.0)
     parser.add_argument("--num_classes", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=128)
     args = parser.parse_args()
     timestamp = str(time.time())
     log(INFO, f"Timestamp: {timestamp}")
