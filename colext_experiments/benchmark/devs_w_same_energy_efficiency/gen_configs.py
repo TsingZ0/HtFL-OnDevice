@@ -11,18 +11,19 @@ template_experiment = {
         "path": "../../../../../", # root folder
         "client": {
             "command": (
-                "./config_device_data.sh ${COLEXT_DATASETS}/iWildCam identity && "
+                "./config_device_data.sh ${COLEXT_DATASETS}/iWildCam_trim_12 identity && "
                 "python3 -m system.clients.client{{ FL_ALGORITHM }} "
+                "--num_classes=64 "
                 "--server_address=${COLEXT_SERVER_ADDRESS} "
-                "--num_classes=158"
             )
         },
         "server": {
             "command": (
                 "python3 -m system.servers.server{{ FL_ALGORITHM }} "
+                "--num_classes=64 "
                 "--min_fit_clients=${COLEXT_N_CLIENTS} "
                 "--min_available_clients=${COLEXT_N_CLIENTS} "
-                "--num_rounds=10"
+                "--num_rounds=10 "
             )
         },
     },
@@ -32,7 +33,7 @@ template_experiment = {
         {"dev_type": "JetsonXavierNX",   "count": 2, "add_args": "--model=ResNet50"},
         {"dev_type": "JetsonNano",       "count": 2, "add_args": "--model=ResNet34"},
         {"dev_type": "OrangePi5B",       "count": 2, "add_args": "--model=ResNet10"},
-        # {"dev_type": "LattePandaDelta3", "count": 2, "add_args": "--model=?"}, # Facing power measurement issues
+        {"dev_type": "LattePandaDelta3", "count": 2, "add_args": "--model=ResNet8"},
     ],
 }
 
@@ -47,7 +48,7 @@ script_dir = Path(__file__).resolve().parent
 config_dir = script_dir / "output" / "colext_configs"
 if config_dir.exists():
     shutil.rmtree(config_dir)
-config_dir.mkdir()
+config_dir.mkdir(parents=True)
 
 # Generate YAML files for each algorithm
 config_id = 0
@@ -63,9 +64,6 @@ for (algorithm_type, algorithms) in HtFL_algorithms:
             exp["code"][target]["command"] = (
                 exp["code"][target]["command"].replace("{{ FL_ALGORITHM }}", algorithm)
             )
-
-        if algorithm in ["Gen", "GH", "TGP"]:
-            exp["code"]["server"]["command"] += " --num_classes=158"
 
         with open(filename, "w", encoding="utf-8") as f:
             yaml.dump(exp, f, sort_keys=False)
