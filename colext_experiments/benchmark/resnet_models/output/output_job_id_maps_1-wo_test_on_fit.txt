@@ -1,5 +1,0 @@
-1219=ResNet18
-1220=ResNet34
-1221=ResNet50
-1222=ResNet101
-1223=ResNet152
