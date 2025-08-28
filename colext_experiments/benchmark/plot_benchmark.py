@@ -27,7 +27,8 @@ def make_plots(job_ids_file, benchmark_output, args):
     job_summaries_df = job_summaries_df[(job_summaries_df["round_number"] > 1) & (job_summaries_df["stage"] == "FIT")]
 
     # Plots per sample data
-    dev_order = ["JetsonAGXOrin", "JetsonOrinNano", "JetsonXavierNX", "JetsonNano", "JetsonXavierNX", "OrangePi5B"]
+    dev_order = ["JetsonAGXOrin", "JetsonOrinNano", "JetsonXavierNX", "JetsonNano",
+                 "OrangePi5B", "LattePandaDelta3"]
     header_cols = ["Training time ps (ms)", "Energy ps (mJ)"]
     cat_plot(job_summaries_df, plots_dir, "per_dev_ps", header_cols, x_col="dev_type", hue_col="job_id",
              extra_plot_args={
@@ -180,8 +181,10 @@ def cat_plot(df, plots_dir, name_suffix, header_cols,
         bench_dev_df = df[df["dev_type"] == y_limit_dev]
         max_increase = 1.7
         for ax in g.axes.flat:
-            (stage, col) = ax.get_title().split(' | ', 1)
-            max_median_value = bench_dev_df[bench_dev_df["stage"] == stage].groupby(hue_col)[col].mean().max()
+            # (stage, col) = ax.get_title().split(' | ', 1)
+            # max_median_value = bench_dev_df[bench_dev_df["stage"] == stage].groupby(hue_col)[col].mean().max()
+            col = ax.get_title()
+            max_median_value = bench_dev_df.groupby(hue_col)[col].mean().max()
             ax.set_ylim(0, max_median_value * max_increase)
             ax.axhline(y=max_median_value, color='k', linestyle='--', alpha=0.7)
 
