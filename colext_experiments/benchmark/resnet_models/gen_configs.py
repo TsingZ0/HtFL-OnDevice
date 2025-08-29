@@ -11,10 +11,10 @@ template_experiment = {
         "path": "../../../../../", # root folder
         "client": {
             "command": (
-                "./config_device_data.sh ${COLEXT_DATASETS}/iWildCam identity && "
+                "./config_device_data.sh ${COLEXT_DATASETS}/iWildCam_trim_12 identity && "
                 "python3 -m system.clients.clientLG "
                 "--server_address=${COLEXT_SERVER_ADDRESS} "
-                "--num_classes=158"
+                "--num_classes=64 "
             )
         },
         "server": {
@@ -22,7 +22,8 @@ template_experiment = {
                 "python3 -m system.servers.serverLG "
                 "--min_fit_clients=${COLEXT_N_CLIENTS} "
                 "--min_available_clients=${COLEXT_N_CLIENTS} "
-                "--num_rounds=10"
+                "--num_rounds=10 "
+                "--num_classes=64 "
             )
         },
     },
@@ -32,7 +33,7 @@ template_experiment = {
         {"dev_type": "JetsonXavierNX",   "count": 2},
         {"dev_type": "JetsonNano",       "count": 2},
         {"dev_type": "OrangePi5B",       "count": 2},
-        # {"dev_type": "LattePandaDelta3", "count": 2}, # Facing power measurement issues
+        {"dev_type": "LattePandaDelta3", "count": 2},
     ],
 }
 
@@ -50,7 +51,7 @@ script_dir = Path(__file__).resolve().parent
 config_dir = script_dir / "output" / "colext_configs"
 if config_dir.exists():
     shutil.rmtree(config_dir)
-config_dir.mkdir()
+config_dir.mkdir(parents=True)
 
 # Generate YAML files for each model
 for config_id, model_name in enumerate(models):

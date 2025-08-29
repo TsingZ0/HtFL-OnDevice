@@ -21,8 +21,14 @@ def make_plots(job_ids_file, benchmark_output, args):
     # Plots total execution time and energy consumption
     plot_totals(round_metrics_df, job_summaries_df, plots_dir)
 
+    # Plots accuracies and how they change across rounds and overtime
+    plot_accuracies(round_metrics_df, job_summaries_df, plots_dir)
+
+    job_summaries_df = job_summaries_df[(job_summaries_df["round_number"] > 1) & (job_summaries_df["stage"] == "FIT")]
+
     # Plots per sample data
-    dev_order = ["JetsonAGXOrin", "JetsonOrinNano", "JetsonXavierNX", "JetsonNano", "JetsonXavierNX", "OrangePi5B"]
+    dev_order = ["JetsonAGXOrin", "JetsonOrinNano", "JetsonXavierNX", "JetsonNano",
+                 "OrangePi5B", "LattePandaDelta3"]
     header_cols = ["Training time ps (ms)", "Energy ps (mJ)"]
     cat_plot(job_summaries_df, plots_dir, "per_dev_ps", header_cols, x_col="dev_type", hue_col="job_id",
              extra_plot_args={
@@ -60,10 +66,12 @@ def make_plots(job_ids_file, benchmark_output, args):
     header_cols = [
         "Round time (s)", "Training time (s)", "Idle time (s)", "Server time (s)",
         "Energy training (J)", "Energy in round (J)",
-        "Data rcvd in round (MiB)", "Data sent in round (MiB)",
         "Avg CPU Util (%)", "Max CPU Util (%)",
         "Avg GPU Util (%)", "Max GPU Util (%)",
         "Avg Mem Util (MiB)", "Max Mem Util (MiB)",
+        "Data rcvd in round (MiB)", "Data sent in round (MiB)",
+        "Avg Download (MiB/s)", "Max Download (MiB/s)",
+        "Avg Upload (MiB/s)", "Max Upload (MiB/s)",
     ]
     cat_plot(job_summaries_df, plots_dir, "per_job_round_full", header_cols, x_col="job_id", hue_col="dev_type",
                 # extra_plot_args = {
@@ -74,6 +82,7 @@ def make_plots(job_ids_file, benchmark_output, args):
 
     # Flip previous plot - Plot most metrics with dev on the x axis and job as hue
     cat_plot(job_summaries_df, plots_dir, "per_dev_round", header_cols, x_col="dev_type", hue_col="job_id")
+
 
 def prepare_data(job_ids_file, benchmark_output, force_collect=False):
     print(f"Reading job ids from '{job_ids_file}'")
@@ -158,7 +167,8 @@ def cat_plot(df, plots_dir, name_suffix, header_cols,
 
     g = sns.catplot(x=x_col, y="value", hue=hue_col, data=df_long,
                     col="metric",
-                    row="stage",
+                    # row="stage",
+                    col_wrap=min(len(header_cols), 6),
                     kind="bar", sharey=False, height=3,
                     **extra_plot_args)
 
@@ -171,8 +181,10 @@ def cat_plot(df, plots_dir, name_suffix, header_cols,
         bench_dev_df = df[df["dev_type"] == y_limit_dev]
         max_increase = 1.7
         for ax in g.axes.flat:
-            (stage, col) = ax.get_title().split(' | ', 1)
-            max_median_value = bench_dev_df[bench_dev_df["stage"] == stage].groupby(hue_col)[col].mean().max()
+            # (stage, col) = ax.get_title().split(' | ', 1)
+            # max_median_value = bench_dev_df[bench_dev_df["stage"] == stage].groupby(hue_col)[col].mean().max()
+            col = ax.get_title()
+            max_median_value = bench_dev_df.groupby(hue_col)[col].mean().max()
             ax.set_ylim(0, max_median_value * max_increase)
             ax.axhline(y=max_median_value, color='k', linestyle='--', alpha=0.7)
 
@@ -196,6 +208,23 @@ def plot_totals(round_metrics_df, job_summaries_df, plots_dir):
     fig.autofmt_xdate(rotation=70)
 
     fig.savefig(os.path.join(plots_dir, "per_job"), **OUTPUT_FORMAT_CONFIG)
+
+def plot_accuracies(round_metrics_df, job_summaries_df, plots_dir):
+
+    eval_stage_df = round_metrics_df[round_metrics_df["stage"] == "EVAL"].copy()
+    eval_stage_df["acc"] = eval_stage_df["dist_accuracy"] * 100
+    # eval_stage_df["acc"] = eval_stage_df["acc"].fillna(0)
+
+    eval_stage_df["end_time_diff"] = eval_stage_df.groupby("job_id")["end_time"].diff().fillna(pd.Timedelta(seconds=0))
+    eval_stage_df["elapsed_time"] = eval_stage_df.groupby("job_id")["end_time_diff"].cumsum().dt.total_seconds()
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), gridspec_kw={'width_ratios': [1, 1], 'wspace': 0.3})
+    job_order = eval_stage_df.groupby("job_id")["acc"].last().sort_values(ascending=False).index
+    sns.lineplot(x="round_number", y="acc", hue="job_id", data=eval_stage_df, ax=ax1, legend=False, hue_order=job_order)
+    sns.lineplot(x="elapsed_time", y="acc", hue="job_id", data=eval_stage_df, ax=ax2, legend="full", hue_order=job_order)
+    ax2.legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
+
+    fig.savefig(os.path.join(plots_dir, "per_job_accuracies"), **OUTPUT_FORMAT_CONFIG)
 
 def main():
     parser = argparse.ArgumentParser()

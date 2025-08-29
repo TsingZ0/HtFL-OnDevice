@@ -1,0 +1,8 @@
+1630=0_LG-Partial_Het
+1631=1_Gen-Partial_Het
+1632=2_GH-Partial_Het
+1633=3_FD-Full_Het
+1634=4_FML-Full_Het
+1635=5_KD-Full_Het
+1636=6_Proto-Full_Het
+1637=7_TGP-Full_Het
