@@ -11,7 +11,7 @@ template_experiment = {
         "path": "../../../../../", # root folder
         "client": {
             "command": (
-                "./config_device_data.sh ${COLEXT_DATASETS}/iWildCam_trim_12 identity && "
+                "./config_device_data.sh ${COLEXT_DATASETS} identity && "
                 "python3 -m system.clients.clientLG "
                 "--server_address=${COLEXT_SERVER_ADDRESS} "
                 "--num_classes=64 "

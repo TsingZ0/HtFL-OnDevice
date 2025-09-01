@@ -12,9 +12,6 @@ The HtFL frameworks with ~~strikethrough~~ indicate the ones that are not yet im
   - **[PAMAP2](http://archive.ics.uci.edu/ml/datasets/pamap2+physical+activity+monitoring)** (9 clients, 12 labels)
   - **[iWildCam](https://wilds.stanford.edu/)** (194 camera traps, 158 labels)
 - `system`: Flower servers and clients. Here are supported HtFL frameworks:
-  - Group-heterogeneity-based HtFL
-    - ~~**HeteroFL** — [HeteroFL: Computation and Communication Efficient Federated Learning for Heterogeneous Clients](https://openreview.net/forum?id=TNkPBBYFkXg) *ICLR 2021*~~
-    - ~~**FjORD** — [FjORD: Fair and Accurate Federated Learning under heterogeneous targets with Ordered Dropout](https://proceedings.neurips.cc/paper/2021/hash/6aed000af86a084f9cb0264161e29dd3-Abstract.html) *NeurIPS 2021*~~
   - Partial-heterogeneity-based HtFL
     - **LG-FedAvg** — [Think Locally, Act Globally: Federated Learning with Local and Global Representations](https://arxiv.org/abs/2001.01523) *2020*
     - **FedGen** — [Data-Free Knowledge Distillation for Heterogeneous Federated Learning](http://proceedings.mlr.press/v139/zhu21b.html) *ICML 2021*
@@ -25,7 +22,6 @@ The HtFL frameworks with ~~strikethrough~~ indicate the ones that are not yet im
     - **FedKD** — [Communication-efficient federated learning via knowledge distillation](https://www.nature.com/articles/s41467-022-29763-x) *Nature Communications 2022*
     - **FedProto** — [FedProto: Federated Prototype Learning across Heterogeneous Clients](https://ojs.aaai.org/index.php/AAAI/article/view/20819) *AAAI 2022*
     - **FedTGP** — [FedTGP: Trainable Global Prototypes with Adaptive-Margin-Enhanced Contrastive Learning for Data and Model Heterogeneity in Federated Learning](https://arxiv.org/abs/2401.03230) *AAAI 2024*
-    - ~~**FedKTL** — [An Upload-Efficient Scheme for Transferring Knowledge From a Server-Side Pre-trained Generator to Clients in Heterogeneous Federated Learning](https://arxiv.org/abs/2403.15760) *CVPR 2024* *(Note: FedKTL requires pre-trained generators to run, please refer to its [project page](https://github.com/TsingZ0/FedKTL) for download links.)*~~
 
 ## How to Use
 

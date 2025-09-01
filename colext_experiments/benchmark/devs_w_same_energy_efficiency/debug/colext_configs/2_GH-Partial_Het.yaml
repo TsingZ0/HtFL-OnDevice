@@ -3,7 +3,7 @@ project: htfl-ondevice
 code:
   path: ../../../../../
   client:
-    command: './config_device_data.sh ${COLEXT_DATASETS}/iWildCam_trim_12 identity
+    command: './config_device_data.sh ${COLEXT_DATASETS} identity
       && python3 -m system.clients.clientGH --num_classes=64 --server_address=${COLEXT_SERVER_ADDRESS} '
   server:
     command: 'python3 -m system.servers.serverGH --num_classes=64 --min_fit_clients=${COLEXT_N_CLIENTS}

@@ -21,7 +21,6 @@ class ClientBase(fl.client.NumPyClient):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.args = args
         save_item(model.to(self.device), "model", self.args.save_folder_path)
-        self.remapping_data_labels()
         self.load_data()
 
     # send
@@ -53,56 +52,6 @@ class ClientBase(fl.client.NumPyClient):
             "accuracy": float(accuracy)
         }
         return loss, num_test_examples, metrics
-    
-    def remapping_data_labels(self):
-        data_dir = 'dataset/' + self.args.data_name
-
-        if not os.path.exists(data_dir + "_trim"):
-            n_clients = int(os.environ.get("COLEXT_N_CLIENTS"))
-            file_ids = [str(a) for a in list(range(n_clients))]
-
-            remap = {}
-            label_cnt = 0
-            for file_id in file_ids:
-                train_file_path = data_dir + "/train/" + file_id + ".npz"
-                test_file_path = data_dir + "/test/" + file_id + ".npz"
-                train_data = np.load(train_file_path, allow_pickle=True)['data'].tolist()
-                test_data = np.load(test_file_path, allow_pickle=True)['data'].tolist()
-                for original_label in train_data['y'] + test_data['y']:
-                    if original_label not in remap.keys():
-                        remap[original_label] = label_cnt
-                        label_cnt += 1
-
-            log(INFO, f"Label re-mapping: {remap}")
-            log(INFO, f"Total labels: {label_cnt}")
-
-            for file_id in file_ids:
-                train_file_path = data_dir + "/train/" + file_id + ".npz"
-                test_file_path = data_dir + "/test/" + file_id + ".npz"
-                train_data = np.load(train_file_path, allow_pickle=True)['data'].tolist()
-                test_data = np.load(test_file_path, allow_pickle=True)['data'].tolist()
-
-                new_labels = []
-                for label in train_data['y']:
-                    new_labels.append(remap[label])
-                train_data['y'] = new_labels
-                data_dir_new = data_dir + "_trim" + "/train/"
-                os.makedirs(data_dir_new, exist_ok=True)
-                train_file_path_new = data_dir_new + file_id + ".npz"
-                with open(train_file_path_new, 'wb') as f:
-                    np.savez_compressed(f, data=train_data)
-                    
-                new_labels = []
-                for label in test_data['y']:
-                    new_labels.append(remap[label])
-                test_data['y'] = new_labels
-                data_dir_new = data_dir + "_trim" + "/test/"
-                os.makedirs(data_dir_new, exist_ok=True)
-                test_file_path_new = data_dir_new + file_id + ".npz"
-                with open(test_file_path_new, 'wb') as f:
-                    np.savez_compressed(f, data=test_data)
-        else:
-            log(INFO, "Data labels already remapped, skipping...")
 
     # rewite this code to use already assigned local data
     def load_data(self):

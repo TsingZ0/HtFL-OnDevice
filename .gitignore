@@ -3,7 +3,7 @@ checkpoints/
 colext_metrics/
 
 # Dataset
-*data/
+*data*/
 logs/
 
 # Byte-compiled / optimized / DLL files
