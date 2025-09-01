@@ -1,8 +1,0 @@
-1622=0_LG-Partial_Het
-1623=1_Gen-Partial_Het
-1624=2_GH-Partial_Het
-1625=3_FD-Full_Het
-1626=4_FML-Full_Het
-1627=5_KD-Full_Het
-1628=6_Proto-Full_Het
-1629=7_TGP-Full_Het

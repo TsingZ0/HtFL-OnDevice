@@ -1,0 +1,8 @@
+1646=LG-Partial_Het
+1647=Gen-Partial_Het
+1648=GH-Partial_Het
+1649=FD-Full_Het
+1650=FML-Full_Het
+1651=KD-Full_Het
+1652=Proto-Full_Het
+1653=TGP-Full_Het
