@@ -1,4 +1,4 @@
-# On-Device Heterogeneous Federated Learning (HtFL)
+# A Practical Platform for Heterogeneous Federated Learning on Real Heterogeneous Devices
 
 An extension of [HtFLlib](https://github.com/TsingZ0/HtFLlib) for on-device HtFL deployment using real devices, based on [Flower](https://flower.ai/) and [CoLExT](https://sands.kaust.edu.sa/project/colext/).
 
