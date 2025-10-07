@@ -99,7 +99,7 @@ class FD(fl.server.strategy.FedAvg):
     def proto_merge(self, protos_new):
         for k, proto in protos_new.items():
             if k in self.global_protos.keys():
-                self.global_protos[k] = self.global_protos[k] * (1-self.args.alpha) + proto * self.args.alpha
+                self.global_protos[k] = self.global_protos[k] * self.args.alpha + proto * (1-self.args.alpha)
             else:
                 self.global_protos[k] = copy.deepcopy(proto)
 

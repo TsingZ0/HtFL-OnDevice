@@ -49,11 +49,9 @@ class Client(ClientBase):
              for key, proto in global_protos_dict
              if len(proto.shape) > 0}
         )
-        my_labels = set()
         for images, labels in self.trainloader:
             for i, label in enumerate(labels):
                 label = label.item()
-                my_labels.add(label)
                 if label not in global_protos.keys():
                     return
         save_item(global_protos, "global_protos", self.args.save_folder_path)
