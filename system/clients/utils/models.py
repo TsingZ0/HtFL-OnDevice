@@ -78,21 +78,21 @@ def get_model(args):
         model = resnet8(num_classes=args.num_classes)
     elif args.model == "ResNet10":
         model = resnet10(num_classes=args.num_classes)
-    elif args.model == "HARCNN_1":
-        model = HARCNN(9, dim_hidden=1664, num_classes=args.num_classes, stride=1)
-    elif args.model == "HARCNN_2":
-        model = HARCNN(9, dim_hidden=1664, num_classes=args.num_classes, stride=2)
-    elif args.model == "HARCNN_3":
-        model = HARCNN(9, dim_hidden=1664, num_classes=args.num_classes, stride=3)
-    elif args.model == "HARCNN_4":
+    elif args.model == "HARCNN_11":
         model = HARCNN1(9, dim_hidden=832, num_classes=args.num_classes, stride=1)
-    elif args.model == "HARCNN_5":
+    elif args.model == "HARCNN_12":
         model = HARCNN1(9, dim_hidden=832, num_classes=args.num_classes, stride=2)
-    elif args.model == "HARCNN_6":
+    elif args.model == "HARCNN_13":
         model = HARCNN1(9, dim_hidden=832, num_classes=args.num_classes, stride=3)
-    elif args.model == "HARCNN_7":
+    elif args.model == "HARCNN_21":
+        model = HARCNN(9, dim_hidden=1664, num_classes=args.num_classes, stride=1)
+    elif args.model == "HARCNN_22":
+        model = HARCNN(9, dim_hidden=1664, num_classes=args.num_classes, stride=2)
+    elif args.model == "HARCNN_23":
+        model = HARCNN(9, dim_hidden=1664, num_classes=args.num_classes, stride=3)
+    elif args.model == "HARCNN_31":
         model = HARCNN3(9, dim_hidden=3328, num_classes=args.num_classes, stride=1)
-    elif args.model == "HARCNN_8":
+    elif args.model == "HARCNN_32":
         model = HARCNN3(9, dim_hidden=3328, num_classes=args.num_classes, stride=2)
     else:
         raise NotImplementedError
