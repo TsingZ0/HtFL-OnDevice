@@ -133,16 +133,17 @@ class HARCNN(nn.Module):
             dim_hidden=64*26,
             num_classes=6,
             conv_kernel_size=(1, 9),
+            stride=1,
             pool_kernel_size=(1, 2)
         ):
         super().__init__()
         self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, 32, kernel_size=conv_kernel_size),
+            nn.Conv2d(in_channels, 32, kernel_size=conv_kernel_size, stride=stride),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=pool_kernel_size, stride=2)
         )
         self.conv2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=conv_kernel_size),
+            nn.Conv2d(32, 64, kernel_size=conv_kernel_size, stride=stride),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=pool_kernel_size, stride=2)
         )
