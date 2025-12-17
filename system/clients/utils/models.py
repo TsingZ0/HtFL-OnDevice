@@ -130,7 +130,7 @@ def get_auxiliary_model(args):
 class HARCNN(nn.Module):
     def __init__(self,
             in_channels=9,
-            hidden_dim=64*26,
+            dim_hidden=64*26,
             num_classes=6,
             conv_kernel_size=(1, 9),
             pool_kernel_size=(1, 2)
@@ -147,7 +147,7 @@ class HARCNN(nn.Module):
             nn.MaxPool2d(kernel_size=pool_kernel_size, stride=2)
         )
         self.fc = nn.Sequential(
-            nn.Linear(hidden_dim, 1024),
+            nn.Linear(dim_hidden, 1024),
             nn.ReLU(),
             nn.Linear(1024, 512),
             nn.ReLU(),
