@@ -21,6 +21,8 @@ if __name__ == "__main__":
     parser.add_argument("--min_fit_clients", type=int, default=2)
     parser.add_argument("--min_available_clients", type=int, default=2)
     parser.add_argument("--num_classes", type=int, default=10)
+    parser.add_argument("--model", type=str, default="ResNet18")
+    parser.add_argument("--server_address", type=str, default="0.0.0.0:8080")
     args = parser.parse_args()
     timestamp = str(time.time())
     log(INFO, f"Timestamp: {timestamp}")
@@ -28,6 +30,7 @@ if __name__ == "__main__":
 
     # Start server
     fl.server.start_server(
+        server_address=args.server_address,
         config=fl.server.ServerConfig(num_rounds=args.num_rounds),
         strategy=LG(
             fraction_fit=args.fraction_fit,

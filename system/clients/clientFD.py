@@ -116,6 +116,8 @@ if __name__ == "__main__":
     parser.add_argument("--pretrained", type=bool, default=False)
     parser.add_argument("--server_address", type=str, default="127.0.0.1:8080")
     parser.add_argument("--lamda", type=float, default=1.0)
+    parser.add_argument("--cid", type=int, default=0)
+    parser.add_argument("--num_rounds", type=int, default=1)
     args = parser.parse_args()
     timestamp = str(time.time())
     log(INFO, f"Timestamp: {timestamp}")

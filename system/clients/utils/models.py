@@ -45,79 +45,112 @@ class BaseHeadSplit(nn.Module):
 
 
 def get_model(args):
+    in_channels = 9 if args.data_name in ["HAR", "PAMAP2"] else 3
     if args.model == "ResNet18":
-        model = torchvision.models.resnet18(
+        model = resnet18(
             num_classes=args.num_classes,
-            pretrained=args.pretrained,
+            in_channels=in_channels,
         )
     elif args.model == "ResNet34":
-        model = torchvision.models.resnet34(
+        model = resnet34(
             num_classes=args.num_classes,
-            pretrained=args.pretrained,
+            in_channels=in_channels,
         )
     elif args.model == "ResNet50":
-        model = torchvision.models.resnet50(
+        model = resnet50(
             num_classes=args.num_classes,
-            pretrained=args.pretrained,
+            in_channels=in_channels,
         )
     elif args.model == "ResNet101":
-        model = torchvision.models.resnet101(
+        model = resnet101(
             num_classes=args.num_classes,
-            pretrained=args.pretrained,
+            in_channels=in_channels,
         )
     elif args.model == "ResNet152":
-        model = torchvision.models.resnet152(
+        model = resnet152(
             num_classes=args.num_classes,
-            pretrained=args.pretrained,
+            in_channels=in_channels,
         )
     elif args.model == "ResNet4":
-        model = resnet4(num_classes=args.num_classes)
+        model = resnet4(num_classes=args.num_classes, in_channels=in_channels)
     elif args.model == "ResNet6":
-        model = resnet6(num_classes=args.num_classes)
+        model = resnet6(num_classes=args.num_classes, in_channels=in_channels)
     elif args.model == "ResNet8":
-        model = resnet8(num_classes=args.num_classes)
+        model = resnet8(num_classes=args.num_classes, in_channels=in_channels)
     elif args.model == "ResNet10":
-        model = resnet10(num_classes=args.num_classes)
+        model = resnet10(num_classes=args.num_classes, in_channels=in_channels)
     elif args.model == "HARCNN_11":
-        model = HARCNN1(9, dim_hidden=832, num_classes=args.num_classes, stride=1)
+        model = HARCNN1(in_channels, dim_hidden=832, num_classes=args.num_classes, stride=1)
     elif args.model == "HARCNN_12":
-        model = HARCNN1(9, dim_hidden=832, num_classes=args.num_classes, stride=2)
+        model = HARCNN1(in_channels, dim_hidden=832, num_classes=args.num_classes, stride=2)
     elif args.model == "HARCNN_13":
-        model = HARCNN1(9, dim_hidden=832, num_classes=args.num_classes, stride=3)
+        model = HARCNN1(in_channels, dim_hidden=832, num_classes=args.num_classes, stride=3)
     elif args.model == "HARCNN_21":
-        model = HARCNN(9, dim_hidden=1664, num_classes=args.num_classes, stride=1)
+        model = HARCNN(in_channels, dim_hidden=1664, num_classes=args.num_classes, stride=1)
     elif args.model == "HARCNN_22":
-        model = HARCNN(9, dim_hidden=1664, num_classes=args.num_classes, stride=2)
+        model = HARCNN(in_channels, dim_hidden=1664, num_classes=args.num_classes, stride=2)
     elif args.model == "HARCNN_23":
-        model = HARCNN(9, dim_hidden=1664, num_classes=args.num_classes, stride=3)
+        model = HARCNN(in_channels, dim_hidden=1664, num_classes=args.num_classes, stride=3)
     elif args.model == "HARCNN_31":
-        model = HARCNN3(9, dim_hidden=3328, num_classes=args.num_classes, stride=1)
+        model = HARCNN3(in_channels, dim_hidden=3328, num_classes=args.num_classes, stride=1)
     elif args.model == "HARCNN_32":
-        model = HARCNN3(9, dim_hidden=3328, num_classes=args.num_classes, stride=2)
+        model = HARCNN3(in_channels, dim_hidden=3328, num_classes=args.num_classes, stride=2)
     else:
         raise NotImplementedError
     return BaseHeadSplit(args, model)
 
 
 def get_auxiliary_model(args):
+    in_channels = 9 if args.data_name in ["HAR", "PAMAP2"] else 3
     if args.auxiliary_model == "ResNet18":
-        model = torchvision.models.resnet18(
+        model = resnet18(
             num_classes=args.num_classes,
-            pretrained=args.pretrained,
+            in_channels=in_channels,
         )
     elif args.auxiliary_model == "ResNet34":
-        model = torchvision.models.resnet34(
+        model = resnet34(
             num_classes=args.num_classes,
-            pretrained=args.pretrained,
+            in_channels=in_channels,
+        )
+    elif args.auxiliary_model == "ResNet50":
+        model = resnet50(
+            num_classes=args.num_classes,
+            in_channels=in_channels,
+        )
+    elif args.auxiliary_model == "ResNet101":
+        model = resnet101(
+            num_classes=args.num_classes,
+            in_channels=in_channels,
+        )
+    elif args.auxiliary_model == "ResNet152":
+        model = resnet152(
+            num_classes=args.num_classes,
+            in_channels=in_channels,
         )
     elif args.auxiliary_model == "ResNet4":
-        model = resnet4(num_classes=args.num_classes)
+        model = resnet4(num_classes=args.num_classes, in_channels=in_channels)
     elif args.auxiliary_model == "ResNet6":
-        model = resnet6(num_classes=args.num_classes)
+        model = resnet6(num_classes=args.num_classes, in_channels=in_channels)
     elif args.auxiliary_model == "ResNet8":
-        model = resnet8(num_classes=args.num_classes)
+        model = resnet8(num_classes=args.num_classes, in_channels=in_channels)
     elif args.auxiliary_model == "ResNet10":
-        model = resnet10(num_classes=args.num_classes)
+        model = resnet10(num_classes=args.num_classes, in_channels=in_channels)
+    elif args.auxiliary_model == "HARCNN_11":
+        model = HARCNN1(in_channels, dim_hidden=832, num_classes=args.num_classes, stride=1)
+    elif args.auxiliary_model == "HARCNN_12":
+        model = HARCNN1(in_channels, dim_hidden=832, num_classes=args.num_classes, stride=2)
+    elif args.auxiliary_model == "HARCNN_13":
+        model = HARCNN1(in_channels, dim_hidden=832, num_classes=args.num_classes, stride=3)
+    elif args.auxiliary_model == "HARCNN_21":
+        model = HARCNN(in_channels, dim_hidden=1664, num_classes=args.num_classes, stride=1)
+    elif args.auxiliary_model == "HARCNN_22":
+        model = HARCNN(in_channels, dim_hidden=1664, num_classes=args.num_classes, stride=2)
+    elif args.auxiliary_model == "HARCNN_23":
+        model = HARCNN(in_channels, dim_hidden=1664, num_classes=args.num_classes, stride=3)
+    elif args.auxiliary_model == "HARCNN_31":
+        model = HARCNN3(in_channels, dim_hidden=3328, num_classes=args.num_classes, stride=1)
+    elif args.auxiliary_model == "HARCNN_32":
+        model = HARCNN3(in_channels, dim_hidden=3328, num_classes=args.num_classes, stride=2)
     else:
         raise NotImplementedError
     return BaseHeadSplit(args, model)
