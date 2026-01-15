@@ -118,8 +118,8 @@ class ClientBase(fl.client.NumPyClient):
             lr=self.args.learning_rate,
             momentum=self.args.momentum
         )
-        for _ in range(self.args.epochs):
-            for images, labels in self.trainloader:
+        for epoch in range(self.args.epochs):
+            for i, (images, labels) in enumerate(self.trainloader):
                 images, labels = images.to(self.device), labels.to(self.device)
                 outputs = model(images)
                 loss = criterion(outputs, labels)
@@ -127,6 +127,7 @@ class ClientBase(fl.client.NumPyClient):
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
                 optimizer.step()
+            log(INFO, f"Client {self.cid} epoch {epoch} finished.")
         save_item(model, "model", self.args.save_folder_path)
 
     def test(self):
