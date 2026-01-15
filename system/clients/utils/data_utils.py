@@ -2,18 +2,12 @@ import os
 import numpy as np
 import torch
 
-from flwr.common.logger import log
-from logging import INFO
-
 DEVICE_DATA_DIR = "device_data"
 def read_data(file_path):
     np_data = np.load(file_path, allow_pickle=True)['data'].tolist()
 
     X = torch.Tensor(np_data['x']).type(torch.float32)
     Y = torch.Tensor(np_data['y']).type(torch.int64)
-    
-    log(INFO, f"Loaded data from {file_path}. X shape: {X.shape}, Y shape: {Y.shape}")
-    
     torch_data = [(x, y) for x, y in zip(X, Y)]
 
     return torch_data

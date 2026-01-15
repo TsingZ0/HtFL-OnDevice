@@ -19,22 +19,6 @@ class Client(ClientBase):
     def __init__(self, args, model, auxiliary_model):
         super().__init__(args, model)
         save_item(auxiliary_model.to(self.device), "auxiliary_model", self.args.save_folder_path)
-        
-        # Validation check for auxiliary model channel dimensions
-        if hasattr(self, 'trainloader') and len(self.trainloader.dataset) > 0:
-            sample_x, _ = self.trainloader.dataset[0]
-            input_channels = sample_x.shape[0]
-            
-            first_conv_aux = None
-            for module in auxiliary_model.modules():
-                if isinstance(module, torch.nn.Conv2d):
-                    first_conv_aux = module
-                    break
-            
-            if first_conv_aux is not None:
-                if first_conv_aux.in_channels != input_channels:
-                    log(WARNING, f"Auxiliary Model channel dimension mismatch! Model expects {first_conv_aux.in_channels} channels, but data has {input_channels} channels.")
-
         W_h = nn.Linear(args.global_feature_dim, args.feature_dim, bias=False)
         save_item(W_h.to(self.device), "W_h", self.args.save_folder_path)
         self.energy = args.T_start
@@ -133,8 +117,6 @@ if __name__ == "__main__":
     parser.add_argument("--auxiliary_model", type=str, default="ResNet4")
     parser.add_argument("--T_start", type=float, default=0.95)
     parser.add_argument("--T_end", type=float, default=0.98)
-    parser.add_argument("--cid", type=int, default=0)
-    parser.add_argument("--num_rounds", type=int, default=1)
     args = parser.parse_args()
     timestamp = str(time.time())
     log(INFO, f"Timestamp: {timestamp}")

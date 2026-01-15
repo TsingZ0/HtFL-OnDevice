@@ -143,7 +143,6 @@ class ResNet(nn.Module):
         self,
         block: BasicBlock,
         layers: List[int],
-        in_channels: int = 3,
         features: List[int] = [64, 128, 256, 512],
         num_classes: int = 1000,
         zero_init_residual: bool = False,
@@ -168,7 +167,7 @@ class ResNet(nn.Module):
                              "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
         self.groups = groups
         self.base_width = width_per_group
-        self.conv1 = nn.Conv2d(in_channels, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
+        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
         if has_bn:
             self.bn1 = norm_layer(self.inplanes)
         else:
