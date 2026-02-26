@@ -21,22 +21,24 @@ def load_item(item_name, item_path=None):
 
 # split an original model into a base and a head
 class BaseHeadSplit(nn.Module):
-    def __init__(self, args, model):
+    def __init__(self, args, model, feature_dim=None):
         super().__init__()
+        # Use provided feature_dim or fall back to args.feature_dim
+        feat_dim = feature_dim if feature_dim is not None else args.feature_dim
 
         self.base = model
         if hasattr(self.base, 'heads'):
-            self.base.heads = nn.AdaptiveAvgPool1d(args.feature_dim)
+            self.base.heads = nn.AdaptiveAvgPool1d(feat_dim)
         elif hasattr(self.base, 'head'):
-            self.base.head = nn.AdaptiveAvgPool1d(args.feature_dim)
+            self.base.head = nn.AdaptiveAvgPool1d(feat_dim)
         elif hasattr(self.base, 'fc'):
-            self.base.fc = nn.AdaptiveAvgPool1d(args.feature_dim)
+            self.base.fc = nn.AdaptiveAvgPool1d(feat_dim)
         elif hasattr(self.base, 'classifier'):
-            self.base.classifier = nn.AdaptiveAvgPool1d(args.feature_dim)
+            self.base.classifier = nn.AdaptiveAvgPool1d(feat_dim)
         else:
             raise('The base model does not have a classification head.')
 
-        self.head = nn.Linear(args.feature_dim, args.num_classes)
+        self.head = nn.Linear(feat_dim, args.num_classes)
 
     def forward(self, x):
         out = self.base(x)
@@ -122,7 +124,9 @@ def get_auxiliary_model(args):
         model = HARCNN1(9, dim_hidden=832, num_classes=args.num_classes, stride=3)
     else:
         raise NotImplementedError
-    return BaseHeadSplit(args, model)
+    # Auxiliary model uses global_feature_dim if available (for KD), otherwise uses feature_dim
+    aux_feature_dim = getattr(args, 'global_feature_dim', args.feature_dim)
+    return BaseHeadSplit(args, model, feature_dim=aux_feature_dim)
 
 
 # Define customized local model
